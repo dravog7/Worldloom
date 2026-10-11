@@ -1,0 +1,18 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #e6e1d8;
+  background: #1b1a17;
+}
+
+.container {
+  margin: 0;
+  padding: 3rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.muted {
+  opacity: 0.7;
+}
