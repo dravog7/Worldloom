@@ -1,18 +1,174 @@
-:root {
-  font-family: system-ui, sans-serif;
-  color: #e6e1d8;
-  background: #1b1a17;
+/* I1 app shell — dark theme (#000 base, #101010 panels, #2c2c2c borders, #8b7cf6 accent).
+   Component-level styling lives co-located in editor/preview/panels .css files. */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #000;
+  color: #ececec;
 }
 
-.container {
-  margin: 0;
-  padding: 3rem;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+body {
+  font-family: var(--app-font, "Segoe UI", system-ui, sans-serif);
+  font-size: 14px;
 }
 
 .muted {
-  opacity: 0.7;
+  color: #9a9a9a;
+}
+
+/* Centered boot / welcome screens */
+.wl-center {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.wl-center h1 {
+  margin: 0;
+  color: #fff;
+  letter-spacing: 0.06em;
+}
+
+/* App grid: header row + sidebar/main columns */
+.wl-app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 40px 1fr;
+  grid-template-columns: 270px 1fr;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+}
+
+.wl-header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: #101010;
+  border-bottom: 1px solid #2c2c2c;
+}
+
+.wl-title {
+  font-weight: 600;
+  color: #fff;
+}
+
+.wl-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #2c2c2c;
+  color: #9a9a9a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wl-chip-dirty {
+  color: #e6c07b;
+  border-color: #5c4a1f;
+}
+
+.wl-chip-saved {
+  color: #8fce9a;
+  border-color: #2f4d33;
+}
+
+.wl-header .wl-preview-toolbar {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.wl-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+  border-right: 1px solid #2c2c2c;
+  overflow: hidden;
+}
+
+.wl-filter {
+  margin: 8px;
+  padding: 6px 8px;
+  background: #101010;
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  color: #ececec;
+}
+
+.wl-filter:focus {
+  outline: none;
+  border-color: #8b7cf6;
+}
+
+.wl-main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wl-panes {
+  flex: 1;
+  display: grid;
+  min-height: 0;
+}
+
+.wl-layout-split .wl-panes {
+  grid-template-columns: 1fr 1fr;
+}
+
+.wl-layout-editor-only .wl-panes {
+  grid-template-columns: 1fr;
+}
+
+.wl-layout-preview-only .wl-panes {
+  grid-template-columns: 1fr;
+}
+
+.wl-panes > * {
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid #2c2c2c;
+}
+
+.wl-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Buttons */
+.wl-btn {
+  padding: 6px 14px;
+  background: #8b7cf6;
+  color: #0b0b14;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wl-btn:hover {
+  filter: brightness(1.1);
+}
+
+.wl-btn-ghost {
+  background: transparent;
+  color: #bdb4f0;
+  border: 1px solid #2c2c2c;
+  font-weight: 500;
+}
+
+.wl-btn-ghost:hover {
+  border-color: #8b7cf6;
 }

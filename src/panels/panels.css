@@ -1,0 +1,248 @@
+/* Panels (PLAN-M1 C3): file tree, backlinks, Ctrl+K search palette.
+ * Dark-theme tokens match the app shell (App.css): surface #101010,
+ * borders #2c2c2c, accent #8b7cf6. Scoped under .wl- prefixed classes so
+ * nothing leaks globally. */
+
+.wl-panel {
+  background: #101010;
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  color: #e6e6e6;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.wl-panel-header {
+  padding: 8px 10px;
+  border-bottom: 1px solid #2c2c2c;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #9a9a9a;
+}
+
+.wl-count {
+  color: #8b7cf6;
+}
+
+.wl-empty {
+  margin: 0;
+  padding: 10px;
+  color: #8a8a8a;
+  font-style: italic;
+}
+
+/* ---- File tree ---- */
+
+.wl-file-tree {
+  padding: 4px 0;
+  user-select: none;
+}
+
+.wl-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wl-tree-row:hover {
+  background: #1a1a1a;
+}
+
+.wl-icon-dir {
+  color: #8b7cf6;
+}
+
+.wl-icon-file {
+  color: #6f6f6f;
+}
+
+.wl-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Context menu (FileTree) ---- */
+
+.wl-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.wl-context-menu {
+  position: fixed;
+  z-index: 41;
+  min-width: 150px;
+  padding: 4px;
+  background: #101010;
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.wl-context-menu button {
+  background: none;
+  border: none;
+  color: #e6e6e6;
+  font: inherit;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wl-context-menu button:hover {
+  background: #1e1e1e;
+}
+
+.wl-context-menu .wl-danger:hover {
+  color: #ff7b7b;
+}
+
+/* ---- Backlinks panel ---- */
+
+.wl-backlinks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wl-backlink-group {
+  padding: 4px 0;
+  border-bottom: 1px solid #1c1c1c;
+}
+
+.wl-backlink-source {
+  padding: 2px 10px;
+  color: #9a9a9a;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-backlink-item {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #e6e6e6;
+  font: inherit;
+  text-align: left;
+  padding: 3px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.wl-backlink-item:hover {
+  background: #1a1a1a;
+}
+
+.wl-backlink-line {
+  color: #8b7cf6;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+}
+
+.wl-backlink-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Ctrl+K search palette ---- */
+
+.wl-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+}
+
+.wl-search-palette {
+  width: min(620px, 90vw);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+.wl-palette-input {
+  background: #101010;
+  border: none;
+  border-bottom: 1px solid #2c2c2c;
+  color: #e6e6e6;
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.wl-palette-input:focus {
+  border-bottom-color: #8b7cf6;
+}
+
+.wl-palette-results {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.wl-palette-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wl-palette-hit-active,
+.wl-palette-hit:hover {
+  background: #1e1a2e;
+}
+
+.wl-palette-hit-active .wl-palette-title {
+  color: #8b7cf6;
+}
+
+.wl-palette-title {
+  font-weight: 600;
+}
+
+.wl-palette-path {
+  color: #8a8a8a;
+  font-size: 11px;
+}
+
+.wl-palette-snippet {
+  color: #9a9a9a;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-palette-footer {
+  display: flex;
+  gap: 14px;
+  padding: 6px 12px;
+  border-top: 1px solid #2c2c2c;
+  color: #8a8a8a;
+  font-size: 11px;
+}

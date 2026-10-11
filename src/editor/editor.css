@@ -1,0 +1,13 @@
+/* Editor pane host (Wave C1): the app chrome paints the background —
+   CodeMirror itself stays transparent (see editorTheme in EditorPane.tsx). */
+
+.wl-editor-pane {
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+.wl-editor-pane .cm-editor {
+  height: 100%;
+  background: transparent;
+}

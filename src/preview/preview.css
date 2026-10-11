@@ -1,0 +1,45 @@
+/* Preview pane (PLAN-M1 C2). Inherits app colors; only layout + link affordance. */
+
+.wl-preview {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  line-height: 1.55;
+}
+
+.wl-preview .wl-link {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
+.wl-preview .wl-link:hover {
+  text-decoration-style: solid;
+}
+
+.wl-preview-toolbar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.wl-layout-btn {
+  cursor: pointer;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85em;
+}
+
+.wl-layout-btn:hover {
+  border-color: rgba(128, 128, 128, 0.4);
+}
+
+.wl-layout-btn.active {
+  border-color: rgba(128, 128, 128, 0.6);
+  font-weight: 600;
+}
