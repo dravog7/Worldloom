@@ -1,36 +1,40 @@
-/* Panels (PLAN-M1 C3): file tree, backlinks, Ctrl+K search palette.
- * Dark-theme tokens match the app shell (App.css): surface #101010,
- * borders #2c2c2c, accent #8b7cf6. Scoped under .wl- prefixed classes so
- * nothing leaks globally. */
+/* Panels (PLAN-M1 C3, Ink & Antiquity pass): file tree, backlinks,
+   Ctrl+K search palette. All colours/type come from design/tokens.css.
+   Scoped under .wl- prefixed classes so nothing leaks globally. */
 
 .wl-panel {
-  background: #101010;
-  border: 1px solid #2c2c2c;
-  border-radius: 6px;
-  color: #e6e6e6;
+  background: var(--wl-surface);
+  border: 1px solid var(--wl-border);
+  border-radius: 8px;
+  color: var(--wl-text);
   font-size: 13px;
   overflow: hidden;
 }
 
 .wl-panel-header {
-  padding: 8px 10px;
-  border-bottom: 1px solid #2c2c2c;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--wl-border);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  font-size: 11px;
-  color: #9a9a9a;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  font-size: 12px;
+  color: var(--wl-text-dim);
 }
 
 .wl-count {
-  color: #8b7cf6;
+  margin-left: 4px;
+  color: var(--wl-text-dim);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
 .wl-empty {
   margin: 0;
-  padding: 10px;
-  color: #8a8a8a;
+  padding: 12px;
+  color: var(--wl-text-dim);
   font-style: italic;
+  text-align: center;
 }
 
 /* ---- File tree ---- */
@@ -43,29 +47,46 @@
 .wl-tree-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
+  gap: 7px;
+  padding: 4px 10px;
+  margin: 1px 6px;
+  border-left: 2px solid transparent;
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: background-color 100ms ease;
 }
 
 .wl-tree-row:hover {
-  background: #1a1a1a;
+  background: var(--wl-raised);
+}
+
+/* Active row (currently open note) — gold-tinted with a gold edge.
+   Class available for the tree to adopt; no logic change here. */
+.wl-tree-row-active,
+.wl-tree-row[aria-current="true"] {
+  background: var(--wl-accent-soft);
+  border-left-color: var(--wl-accent);
 }
 
 .wl-icon-dir {
-  color: #8b7cf6;
+  color: var(--wl-accent);
 }
 
 .wl-icon-file {
-  color: #6f6f6f;
+  color: var(--wl-text-dim);
 }
 
+/* Folders read as structure, files as prose */
 .wl-tree-name {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.wl-tree-row:has(.wl-icon-dir) .wl-tree-name {
+  font-weight: 600;
 }
 
 /* ---- Context menu (FileTree) ---- */
@@ -79,33 +100,39 @@
 .wl-context-menu {
   position: fixed;
   z-index: 41;
-  min-width: 150px;
-  padding: 4px;
-  background: #101010;
-  border: 1px solid #2c2c2c;
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  min-width: 168px;
+  padding: 5px;
+  background: var(--wl-raised);
+  border: 1px solid var(--wl-border-strong);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
+  font-family: var(--wl-font-ui);
 }
 
 .wl-context-menu button {
   background: none;
   border: none;
-  color: #e6e6e6;
+  color: var(--wl-text);
   font: inherit;
   text-align: left;
   padding: 6px 10px;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
 }
 
 .wl-context-menu button:hover {
-  background: #1e1e1e;
+  background: var(--wl-accent-soft);
+}
+
+.wl-context-menu .wl-danger {
+  color: var(--wl-danger);
 }
 
 .wl-context-menu .wl-danger:hover {
-  color: #ff7b7b;
+  background: rgba(217, 117, 106, 0.12);
+  color: var(--wl-danger);
 }
 
 /* ---- Backlinks panel ---- */
@@ -114,17 +141,24 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .wl-backlink-group {
-  padding: 4px 0;
-  border-bottom: 1px solid #1c1c1c;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--wl-border);
+}
+
+.wl-backlink-group:last-child {
+  border-bottom: none;
 }
 
 .wl-backlink-source {
-  padding: 2px 10px;
-  color: #9a9a9a;
+  padding: 3px 12px;
+  color: var(--wl-text-dim);
   font-size: 11px;
+  letter-spacing: 0.03em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -136,20 +170,22 @@
   width: 100%;
   background: none;
   border: none;
-  color: #e6e6e6;
+  color: var(--wl-text);
   font: inherit;
   text-align: left;
-  padding: 3px 10px;
+  padding: 4px 12px;
   cursor: pointer;
   border-radius: 4px;
 }
 
 .wl-backlink-item:hover {
-  background: #1a1a1a;
+  background: var(--wl-raised);
 }
 
 .wl-backlink-line {
-  color: #8b7cf6;
+  color: var(--wl-accent);
+  font-family: var(--wl-font-mono);
+  font-size: 0.92em;
   font-variant-numeric: tabular-nums;
   min-width: 44px;
 }
@@ -160,7 +196,7 @@
   white-space: nowrap;
 }
 
-/* ---- Ctrl+K search palette ---- */
+/* ---- Ctrl+K search palette (centred modal) ---- */
 
 .wl-palette-overlay {
   position: fixed;
@@ -170,35 +206,44 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 12vh;
+  padding: 14vh 16px 16px;
 }
 
 .wl-search-palette {
-  width: min(620px, 90vw);
+  width: 100%;
+  max-width: 640px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  background: var(--wl-raised);
+  border: 1px solid var(--wl-border-strong);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
 }
 
 .wl-palette-input {
-  background: #101010;
+  background: transparent;
   border: none;
-  border-bottom: 1px solid #2c2c2c;
-  color: #e6e6e6;
-  font: inherit;
-  font-size: 15px;
-  padding: 12px 14px;
+  border-bottom: 1px solid var(--wl-border);
+  color: var(--wl-text);
+  font-family: inherit;
+  font-size: 16px;
+  padding: 14px 16px;
   outline: none;
 }
 
+.wl-palette-input::placeholder {
+  color: var(--wl-text-dim);
+}
+
 .wl-palette-input:focus {
-  border-bottom-color: #8b7cf6;
+  border-bottom-color: var(--wl-accent);
 }
 
 .wl-palette-results {
   list-style: none;
   margin: 0;
-  padding: 4px;
+  padding: 6px;
   max-height: 50vh;
   overflow-y: auto;
 }
@@ -206,33 +251,41 @@
 .wl-palette-hit {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 6px 10px;
-  border-radius: 4px;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.wl-palette-hit-active,
 .wl-palette-hit:hover {
-  background: #1e1a2e;
+  background: var(--wl-surface);
+}
+
+.wl-palette-hit-active,
+.wl-palette-hit-active:hover {
+  background: var(--wl-accent-soft);
+  box-shadow: inset 2px 0 0 var(--wl-accent);
 }
 
 .wl-palette-hit-active .wl-palette-title {
-  color: #8b7cf6;
+  color: var(--wl-accent);
 }
 
 .wl-palette-title {
   font-weight: 600;
+  color: var(--wl-text);
 }
 
 .wl-palette-path {
-  color: #8a8a8a;
+  color: var(--wl-text-dim);
   font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 .wl-palette-snippet {
-  color: #9a9a9a;
+  color: var(--wl-text-dim);
   font-size: 12px;
+  line-height: 1.45;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -240,9 +293,11 @@
 
 .wl-palette-footer {
   display: flex;
-  gap: 14px;
-  padding: 6px 12px;
-  border-top: 1px solid #2c2c2c;
-  color: #8a8a8a;
+  gap: 16px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--wl-border);
+  background: var(--wl-surface);
+  color: var(--wl-text-dim);
   font-size: 11px;
+  letter-spacing: 0.03em;
 }

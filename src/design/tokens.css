@@ -1,0 +1,38 @@
+/* Ink & Antiquity design tokens (Worldloom M1 design-system pass).
+   Single source of truth for the whole shell. The live-preview decoration
+   layer (src/editor/live/live.css) references these same names — do not
+   rename without updating both. */
+
+:root {
+  /* Surfaces */
+  --wl-bg: #0b0d12; /* deep ink — app background */
+  --wl-surface: #10131a; /* sidebar/panels */
+  --wl-raised: #171b25; /* header, hover rows, palette */
+
+  /* Lines */
+  --wl-border: #232937;
+  --wl-border-strong: #303849;
+
+  /* Ink & parchment text */
+  --wl-text: #e8e4da; /* warm parchment white */
+  --wl-text-dim: #9aa0ae;
+
+  /* Antique gold accent */
+  --wl-accent: #d9a441;
+  --wl-accent-hover: #e8b95c;
+  --wl-accent-ink: #16130c; /* text on gold fills */
+  --wl-accent-soft: rgba(217, 164, 65, 0.12);
+  --wl-selection: rgba(217, 164, 65, 0.22);
+
+  /* Semantics */
+  --wl-danger: #d9756a;
+  --wl-success: #7fbf8a;
+
+  /* Code surfaces */
+  --wl-code-bg: #0e1117;
+
+  /* Type */
+  --wl-font-ui: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --wl-font-prose: "Source Serif 4 Variable", Georgia, serif;
+  --wl-font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+}

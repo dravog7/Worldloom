@@ -7,7 +7,6 @@ import { create } from "zustand";
 import { watch, type WatchEvent } from "@tauri-apps/plugin-fs";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { Store } from "@tauri-apps/plugin-store";
-import type { LayoutMode } from "../preview";
 import { MemoryIndex } from "../core/index/memory-index";
 import { parseNote } from "../core/parser";
 import {
@@ -34,6 +33,8 @@ const fs = new TauriFsAdapter();
 
 export type AppStatus = "boot" | "no-vault" | "loading" | "ready" | "error";
 export type EditorStatus = "saved" | "saving" | "dirty";
+/** Editor layout (ADR-005): live preview is the default; source is opt-in. */
+export type EditorLayout = "live" | "split" | "source";
 
 interface StoreState {
   status: AppStatus;
@@ -48,7 +49,7 @@ interface StoreState {
   editorStatus: EditorStatus;
   backlinks: BacklinkGroup[];
   search: SearchState;
-  layout: LayoutMode;
+  layout: EditorLayout;
 
   boot(): Promise<void>;
   openVaultDialog(): Promise<void>;
@@ -62,7 +63,7 @@ interface StoreState {
   toggleExpanded(path: string): void;
   dispatchSearch(action: SearchAction): void;
   querySearch(query: string): void;
-  setLayout(layout: LayoutMode): void;
+  setLayout(layout: EditorLayout): void;
 }
 
 let vault: VaultService | null = null;
@@ -173,13 +174,13 @@ export const useStore = create<StoreState>()((set, get) => {
     editorStatus: "saved",
     backlinks: [],
     search: initialSearchState,
-    layout: "split",
+    layout: "live",
 
     async boot() {
       try {
         const settings = await Store.load(SETTINGS_FILE);
         const savedLayout = await settings.get<string>("layout");
-        if (savedLayout === "split" || savedLayout === "editor-only" || savedLayout === "preview-only") {
+        if (savedLayout === "live" || savedLayout === "split" || savedLayout === "source") {
           set({ layout: savedLayout });
         }
       } catch {

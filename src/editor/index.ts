@@ -25,3 +25,9 @@ export type {
 } from "./autosave";
 
 export { shouldReplaceDoc } from "./doc-sync";
+
+// Live Preview surface (ADR-005, M1.1).
+export { LiveEditor } from "./live/LiveEditor";
+export type { LiveEditorProps } from "./live/LiveEditor";
+export { applyToolbarAction } from "./live/toolbar";
+export type { ToolbarAction } from "./live/toolbar";

@@ -1,22 +1,66 @@
-/* I1 app shell — dark theme (#000 base, #101010 panels, #2c2c2c borders, #8b7cf6 accent).
-   Component-level styling lives co-located in editor/preview/panels .css files. */
+/* Ink & Antiquity — app shell (Worldloom M1 design-system pass).
+   All colours/type come from src/design/tokens.css (imported below so the
+   shell works even if another entry point forgets it). Component-level
+   styling lives co-located in editor/preview/panels .css files. */
+
+@import "./design/tokens.css";
 
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
-  background: #000;
-  color: #ececec;
+  background: var(--wl-bg);
+  color: var(--wl-text);
 }
 
 body {
-  font-family: var(--app-font, "Segoe UI", system-ui, sans-serif);
+  font-family: var(--wl-font-ui);
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Global text selection + focus language */
+::selection {
+  background: var(--wl-selection);
+}
+
+:focus-visible {
+  outline: 2px solid var(--wl-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wl-raised) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--wl-raised);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--wl-border-strong);
+  background-clip: content-box;
 }
 
 .muted {
-  color: #9a9a9a;
+  color: var(--wl-text-dim);
 }
 
 /* Centered boot / welcome screens */
@@ -27,20 +71,44 @@ body {
   align-items: center;
   justify-content: center;
   gap: 14px;
+  padding: 24px;
+  text-align: center;
 }
 
+/* Large serif wordmark with a gold rule underneath */
 .wl-center h1 {
   margin: 0;
-  color: #fff;
-  letter-spacing: 0.06em;
+  font-family: var(--wl-font-prose);
+  font-weight: 600;
+  font-size: 2.6rem;
+  color: var(--wl-text);
+  letter-spacing: 0.14em;
+}
+
+.wl-center h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 2px;
+  margin: 18px auto 0;
+  background: var(--wl-accent);
+}
+
+.wl-center .muted {
+  max-width: 46ch;
+  line-height: 1.6;
+}
+
+.wl-center .wl-btn {
+  margin-top: 8px;
 }
 
 /* App grid: header row + sidebar/main columns */
 .wl-app {
   height: 100%;
   display: grid;
-  grid-template-rows: 40px 1fr;
-  grid-template-columns: 270px 1fr;
+  grid-template-rows: 44px 1fr;
+  grid-template-columns: 280px 1fr;
   grid-template-areas:
     "header header"
     "sidebar main";
@@ -51,34 +119,36 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px;
-  background: #101010;
-  border-bottom: 1px solid #2c2c2c;
+  padding: 0 14px;
+  background: var(--wl-raised);
+  border-bottom: 1px solid var(--wl-border);
 }
 
 .wl-title {
   font-weight: 600;
-  color: #fff;
+  color: var(--wl-accent);
+  letter-spacing: 0.02em;
 }
 
 .wl-chip {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid #2c2c2c;
-  color: #9a9a9a;
+  border: 1px solid var(--wl-border-strong);
+  color: var(--wl-text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .wl-chip-dirty {
-  color: #e6c07b;
-  border-color: #5c4a1f;
+  color: var(--wl-accent);
+  border-color: var(--wl-accent);
+  background: var(--wl-accent-soft);
 }
 
 .wl-chip-saved {
-  color: #8fce9a;
-  border-color: #2f4d33;
+  color: var(--wl-success);
+  border-color: rgba(127, 191, 138, 0.45);
 }
 
 .wl-header .wl-preview-toolbar {
@@ -90,23 +160,31 @@ body {
   grid-area: sidebar;
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
-  border-right: 1px solid #2c2c2c;
+  gap: 8px;
+  padding: 10px;
+  background: var(--wl-surface);
+  border-right: 1px solid var(--wl-border);
   overflow: hidden;
 }
 
 .wl-filter {
-  margin: 8px;
-  padding: 6px 8px;
-  background: #101010;
-  border: 1px solid #2c2c2c;
+  margin: 0;
+  padding: 7px 10px;
+  background: var(--wl-code-bg);
+  border: 1px solid var(--wl-border);
   border-radius: 6px;
-  color: #ececec;
+  color: var(--wl-text);
+  font: inherit;
+}
+
+.wl-filter::placeholder {
+  color: var(--wl-text-dim);
 }
 
 .wl-filter:focus {
   outline: none;
-  border-color: #8b7cf6;
+  border-color: var(--wl-accent);
+  box-shadow: 0 0 0 3px var(--wl-accent-soft);
 }
 
 .wl-main {
@@ -137,7 +215,7 @@ body {
 .wl-panes > * {
   min-width: 0;
   overflow: auto;
-  border-right: 1px solid #2c2c2c;
+  border-right: 1px solid var(--wl-border);
 }
 
 .wl-empty {
@@ -149,26 +227,79 @@ body {
 
 /* Buttons */
 .wl-btn {
-  padding: 6px 14px;
-  background: #8b7cf6;
-  color: #0b0b14;
-  border: none;
+  padding: 7px 16px;
+  background: var(--wl-accent);
+  color: var(--wl-accent-ink);
+  border: 1px solid transparent;
   border-radius: 6px;
+  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .wl-btn:hover {
-  filter: brightness(1.1);
+  background: var(--wl-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 164, 65, 0.22);
+}
+
+.wl-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .wl-btn-ghost {
   background: transparent;
-  color: #bdb4f0;
-  border: 1px solid #2c2c2c;
+  color: var(--wl-text-dim);
+  border: 1px solid var(--wl-border-strong);
   font-weight: 500;
 }
 
 .wl-btn-ghost:hover {
-  border-color: #8b7cf6;
+  background: transparent;
+  border-color: var(--wl-accent);
+  color: var(--wl-text);
+  box-shadow: none;
+  transform: none;
 }
+
+/* Global CodeMirror pass — caret/selection colour only; per-surface
+   typography (prose font, gutters) is handled in editor.css / live.css. */
+.cm-editor .cm-cursor {
+  border-left-color: var(--wl-accent);
+}
+
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground,
+.cm-editor ::selection {
+  background: var(--wl-selection);
+}
+
+/* --- M1.1: editor-mode segmented control + live/source pane grids --- */
+.wl-segment {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1px solid var(--wl-border, #232937);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.wl-seg {
+  padding: 5px 13px;
+  background: transparent;
+  border: none;
+  color: var(--wl-text-dim, #9aa0ae);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.wl-seg:hover { color: var(--wl-text, #e8e4da); }
+.wl-seg-active {
+  background: var(--wl-accent-soft, rgba(217, 164, 65, 0.12));
+  color: var(--wl-accent, #d9a441);
+}
+.wl-layout-live .wl-panes,
+.wl-layout-source .wl-panes { grid-template-columns: 1fr; }

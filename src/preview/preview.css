@@ -1,23 +1,175 @@
-/* Preview pane (PLAN-M1 C2). Inherits app colors; only layout + link affordance. */
+/* Preview pane (PLAN-M1 C2, Ink & Antiquity pass): prose typography for
+   the rendered markdown. Colours/type from design/tokens.css.
+   Widths use `:where()` so the live-preview decoration layer
+   (src/editor/live/live.css) can override freely. */
 
 .wl-preview {
   flex: 1;
   min-width: 0;
-  padding: 0.75rem 1rem;
+  padding: 2rem 1.5rem 4rem;
   overflow: auto;
+  font-family: var(--wl-font-prose);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--wl-text);
+}
+
+/* Reading measure: ~72ch, centred */
+.wl-preview > :where(*) {
+  max-width: 72ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.wl-preview > :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 1.8em;
+  margin-bottom: 0.6em;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.wl-preview > :where(p, ul, ol, blockquote, pre, table) {
+  margin-top: 0;
+  margin-bottom: 1.2em;
+}
+
+.wl-preview > :where(h1) {
+  font-size: 2.1em;
+  letter-spacing: 0.04em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--wl-accent);
+}
+
+.wl-preview > :where(h2) {
+  font-size: 1.5em;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+}
+
+.wl-preview > :where(h3) {
+  font-size: 1.2em;
+}
+
+.wl-preview > :where(h4, h5, h6) {
+  font-size: 1em;
+  color: var(--wl-text-dim);
+}
+
+/* Lists — generous, unhurried rhythm */
+.wl-preview > :where(ul, ol) {
+  padding-left: 1.6em;
+}
+
+.wl-preview li {
+  margin-bottom: 0.35em;
+}
+
+.wl-preview li::marker {
+  color: var(--wl-accent);
+}
+
+/* Blockquote — gold rule, italic, dim */
+.wl-preview > :where(blockquote) {
+  padding: 0.2em 0 0.2em 1.1em;
+  border-left: 3px solid var(--wl-accent);
+  color: var(--wl-text-dim);
+  font-style: italic;
+}
+
+.wl-preview blockquote > :where(*) {
+  margin-bottom: 0.5em;
+}
+
+/* Inline code */
+.wl-preview code {
+  font-family: var(--wl-font-mono);
+  font-size: 0.86em;
+  background: var(--wl-code-bg);
+  border: 1px solid var(--wl-border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+/* Fenced code blocks */
+.wl-preview > :where(pre) {
+  background: var(--wl-code-bg);
+  border: 1px solid var(--wl-border);
+  border-radius: 8px;
+  padding: 0.9em 1.1em;
+  overflow-x: auto;
   line-height: 1.55;
 }
 
+.wl-preview > :where(pre) > code {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.85em;
+}
+
+/* Tables — hairline grid, raised header row */
+.wl-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95em;
+}
+
+.wl-preview th,
+.wl-preview td {
+  border: 1px solid var(--wl-border);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.wl-preview thead th {
+  background: var(--wl-raised);
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.wl-preview tbody tr:nth-child(even) {
+  background: rgba(23, 27, 37, 0.4);
+}
+
+/* Horizontal rule — a quiet gold divider */
+.wl-preview hr {
+  border: none;
+  border-top: 1px solid var(--wl-border-strong);
+  margin: 2em auto;
+  max-width: 72ch;
+}
+
+/* Wikilink chips — gold, dashed underline on hover */
 .wl-preview .wl-link {
-  color: inherit;
+  color: var(--wl-accent);
   cursor: pointer;
   text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  border-radius: 3px;
 }
 
 .wl-preview .wl-link:hover {
-  text-decoration-style: solid;
+  color: var(--wl-accent-hover);
+  background: var(--wl-accent-soft);
+  text-decoration-style: dashed;
 }
 
+/* Links that aren't wikilinks stay parchment-white */
+.wl-preview a:not(.wl-link) {
+  color: var(--wl-text);
+  text-decoration: underline;
+  text-decoration-color: var(--wl-border-strong);
+  text-underline-offset: 3px;
+}
+
+.wl-preview a:not(.wl-link):hover {
+  text-decoration-color: var(--wl-accent);
+}
+
+/* Toolbar (layout switcher) */
 .wl-preview-toolbar {
   display: flex;
   gap: 0.25rem;
@@ -26,20 +178,25 @@
 
 .wl-layout-btn {
   cursor: pointer;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.6rem;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 5px;
   background: transparent;
-  color: inherit;
+  color: var(--wl-text-dim);
   font: inherit;
-  font-size: 0.85em;
+  font-family: var(--wl-font-ui);
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
 }
 
 .wl-layout-btn:hover {
-  border-color: rgba(128, 128, 128, 0.4);
+  border-color: var(--wl-border-strong);
+  color: var(--wl-text);
 }
 
 .wl-layout-btn.active {
-  border-color: rgba(128, 128, 128, 0.6);
+  border-color: var(--wl-accent);
+  background: var(--wl-accent-soft);
+  color: var(--wl-accent);
   font-weight: 600;
 }

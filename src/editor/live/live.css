@@ -1,0 +1,143 @@
+/* Live Preview surface (ADR-005) — decoration classes wl-md-* (names fixed by
+   src/editor/live/decorations.ts) + toolbar chrome. Tokens with fallbacks. */
+
+.wl-live {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.wl-md-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--wl-border, #232937);
+  background: var(--wl-surface, #10131a);
+}
+
+.wl-md-btn {
+  min-width: 26px;
+  padding: 3px 7px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--wl-text-dim, #9aa0ae);
+  font-size: 12.5px;
+  font-family: var(--wl-font-ui, system-ui, sans-serif);
+  cursor: pointer;
+}
+
+.wl-md-btn:hover {
+  background: var(--wl-raised, #171b25);
+  border-color: var(--wl-border, #232937);
+  color: var(--wl-accent, #d9a441);
+}
+
+.wl-md-btn-bold { font-weight: 800; }
+.wl-md-btn-italic { font-style: italic; font-family: var(--wl-font-prose, Georgia, serif); }
+
+.wl-md-toolbar-hint {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--wl-text-dim, #9aa0ae);
+}
+
+.wl-live-host {
+  flex: 1;
+  min-height: 0;
+}
+
+.wl-live-host .cm-editor {
+  height: 100%;
+  font-family: var(--wl-font-prose, "Source Serif 4 Variable", Georgia, serif);
+  font-size: 16px;
+  color: var(--wl-text, #e8e4da);
+  background: transparent;
+}
+
+.wl-live-host .cm-scroller {
+  line-height: 1.7;
+  padding: 14px 28px 45vh 28px;
+}
+
+/* --- Decorations --- */
+
+.wl-md-h1,
+.wl-md-h2,
+.wl-md-h3 {
+  color: var(--wl-text, #e8e4da);
+  font-weight: 650;
+  margin: 0.85em 0 0.25em;
+}
+
+.wl-live-host .cm-line.wl-md-h1 { font-size: 1.85em; letter-spacing: 0.005em; }
+.wl-live-host .cm-line.wl-md-h2 { font-size: 1.4em; }
+.wl-live-host .cm-line.wl-md-h3 { font-size: 1.16em; color: var(--wl-text-dim, #9aa0ae); }
+
+/* Revealed raw `#` markers (span widget) */
+.wl-md-hash {
+  color: var(--wl-accent, #d9a441);
+  opacity: 0.55;
+  font-family: var(--wl-font-mono, monospace);
+  font-size: 0.8em;
+}
+
+.wl-md-strong { font-weight: 700; }
+.wl-md-em { font-style: italic; }
+
+.wl-md-code {
+  font-family: var(--wl-font-mono, monospace);
+  font-size: 0.88em;
+  background: var(--wl-code-bg, #0e1117);
+  border: 1px solid var(--wl-border, #232937);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+.wl-md-wikilink {
+  color: var(--wl-accent, #d9a441);
+  background: var(--wl-accent-soft, rgba(217, 164, 65, 0.12));
+  border-radius: 4px;
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+.wl-md-wikilink:hover {
+  background: var(--wl-selection, rgba(217, 164, 65, 0.22));
+}
+
+.wl-live-host .cm-line.wl-md-quote {
+  color: var(--wl-text-dim, #9aa0ae);
+  font-style: italic;
+  border-left: 3px solid var(--wl-accent, #d9a441);
+  padding-left: 12px;
+  margin-left: 2px;
+}
+
+.wl-md-bullet {
+  color: var(--wl-accent, #d9a441);
+}
+
+.wl-md-hr {
+  display: block;
+  width: 100%;
+  text-align: center;
+  color: var(--wl-border-strong, #303849);
+  border: none;
+}
+
+.wl-live-host hr.wl-md-hr,
+.wl-md-hr hr {
+  border: none;
+  border-top: 1px solid var(--wl-border-strong, #303849);
+}
+
+.wl-live-host .cm-line.wl-md-fenced {
+  font-family: var(--wl-font-mono, monospace);
+  font-size: 0.9em;
+  background: var(--wl-code-bg, #0e1117);
+  border-radius: 4px;
+}

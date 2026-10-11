@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 import "./App.css";
-import { EditorPane } from "./editor";
-import { PreviewPane, PreviewToolbar } from "./preview";
+import { EditorPane, LiveEditor } from "./editor";
+import { PreviewPane } from "./preview";
 import { BacklinksPanel, FileTree, SearchPalette, select } from "./panels";
 import { lookupCandidates, useStore } from "./app/store";
 
 /**
- * I1 wiring: header + sidebar (tree, backlinks) + editor/preview split +
- * Ctrl+K search palette, all driven by the zustand store. Wave A shell
- * replaced; components stay prop-injected per ARCH.md.
+ * I1/M1.1 wiring: header + sidebar (tree, backlinks) + editor area driven by
+ * the zustand store. Layout modes (ADR-005): 'live' (default, markdown
+ * hidden), 'split' (source + read-only preview), 'source' (raw markdown).
  */
 function App() {
   const status = useStore((s) => s.status);
@@ -60,15 +60,23 @@ function App() {
     );
   }
 
-  const showEditor = layout !== "preview-only";
-  const showPreview = layout !== "editor-only";
-
   return (
     <div className="wl-app">
       <header className="wl-header">
         <span className="wl-title">{vaultName}</span>
         <span className={`wl-chip wl-chip-${editorStatus}`}>{editorStatus}</span>
-        <PreviewToolbar current={layout} onLayoutChange={(mode) => store().setLayout(mode)} />
+        <nav className="wl-segment" aria-label="Editor mode">
+          {(["live", "split", "source"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={`wl-seg${layout === mode ? " wl-seg-active" : ""}`}
+              onClick={() => store().setLayout(mode)}
+            >
+              {mode === "live" ? "Live" : mode === "split" ? "Split" : "Source"}
+            </button>
+          ))}
+        </nav>
         <button className="wl-btn wl-btn-ghost" onClick={() => store().dispatchSearch({ type: "open" })}>
           Search ⌘K
         </button>
@@ -99,20 +107,30 @@ function App() {
 
       <section className={`wl-main wl-layout-${layout}`}>
         <div className="wl-panes">
-          {showEditor && currentPath && (
-            <EditorPane
+          {!currentPath && (
+            <p className="wl-empty muted">Select a note from the tree, or press Ctrl+K to search.</p>
+          )}
+          {currentPath && layout !== "split" && (
+            <LiveEditor
               path={currentPath}
               content={currentContent}
               lookup={lookupCandidates}
               onSave={(p, c) => void store().saveNote(p, c)}
               onStatusChange={(s) => useStore.setState({ editorStatus: s })}
+              mode={layout === "live" ? "live" : "source"}
             />
           )}
-          {showEditor && !currentPath && (
-            <p className="wl-empty muted">Select a note from the tree, or press Ctrl+K to search.</p>
-          )}
-          {showPreview && currentPath && (
-            <PreviewPane markdown={currentContent} onNavigate={(t) => void store().navigateWikilink(t)} />
+          {currentPath && layout === "split" && (
+            <>
+              <EditorPane
+                path={currentPath}
+                content={currentContent}
+                lookup={lookupCandidates}
+                onSave={(p, c) => void store().saveNote(p, c)}
+                onStatusChange={(s) => useStore.setState({ editorStatus: s })}
+              />
+              <PreviewPane markdown={currentContent} onNavigate={(t) => void store().navigateWikilink(t)} />
+            </>
           )}
         </div>
       </section>

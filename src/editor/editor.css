@@ -1,5 +1,9 @@
-/* Editor pane host (Wave C1): the app chrome paints the background —
-   CodeMirror itself stays transparent (see editorTheme in EditorPane.tsx). */
+/* Editor pane host (Wave C1, Ink & Antiquity pass): the app chrome paints
+   the background — CodeMirror itself stays transparent (see editorTheme
+   in EditorPane.tsx). Scoped to .wl-editor-pane so the live-preview
+   decoration layer (src/editor/live/live.css, .wl-md-*) is untouched.
+   These rules carry a double-class scope, so they win over the inline
+   CM theme's single-class selectors where they overlap. */
 
 .wl-editor-pane {
   height: 100%;
@@ -10,4 +14,58 @@
 .wl-editor-pane .cm-editor {
   height: 100%;
   background: transparent;
+  color: var(--wl-text);
+}
+
+/* Prose typography in the editing surface */
+.wl-editor-pane .cm-editor .cm-scroller {
+  font-family: var(--wl-font-prose);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+/* Gutter — dim numbers, no box */
+.wl-editor-pane .cm-editor .cm-gutters {
+  background: transparent;
+  border: none;
+  color: var(--wl-text-dim);
+  font-family: var(--wl-font-mono);
+  font-size: 0.85em;
+}
+
+.wl-editor-pane .cm-editor .cm-activeLineGutter {
+  background: transparent;
+  color: var(--wl-text-dim);
+}
+
+/* Caret + selection — gold language */
+.wl-editor-pane .cm-editor .cm-content {
+  caret-color: var(--wl-accent);
+}
+
+.wl-editor-pane .cm-editor .cm-cursor,
+.wl-editor-pane .cm-editor .cm-dropCursor {
+  border-left-color: var(--wl-accent);
+  border-left-width: 2px;
+}
+
+.wl-editor-pane .cm-editor.cm-focused .cm-selectionBackground,
+.wl-editor-pane .cm-editor .cm-selectionBackground,
+.wl-editor-pane .cm-editor ::selection {
+  background: var(--wl-selection);
+}
+
+/* Wikilink autocomplete tooltip */
+.wl-editor-pane .cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--wl-raised);
+  border: 1px solid var(--wl-border-strong);
+  border-radius: 6px;
+  color: var(--wl-text);
+  font-family: var(--wl-font-ui);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.wl-editor-pane .cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--wl-accent-soft);
+  color: var(--wl-accent);
 }
