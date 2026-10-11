@@ -15,5 +15,5 @@ export interface IndexProvider {
   links(path: string): LinkRef[]
   search(query: string): SearchHit[]     // tokens + phrase boost
   all(): Note[]
-  persist(): Promise<void>; load(): Promise<void>
+  persist(): Promise<void>; load(): Promise<boolean>  // false = sidecar missing/corrupt/stale → caller rebuilds (B2 refinement of ADR-003's Promise<void>: same call sites, result carries the rebuild signal)
 }

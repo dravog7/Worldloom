@@ -1,12 +1,12 @@
-import { NotImplementedError } from "../errors";
-
 /**
- * Generates markdown for a new stub note (frontmatter v1 template) so the
- * user can create a note for an unresolved wikilink target.
- *
- * Wave A stub — replaced by B3 (vault service).
+ * Vault service (PLAN-M1 B3): recursive scan, debounced change handling with
+ * self-write suppression, atomic saves (FsPort contract), stub-note creation.
+ * All dependencies (fs, parser, index, timer) are injected — see ARCH.md.
  */
-export function generateStubNote(title: string): string {
-  void title;
-  throw new NotImplementedError("generateStubNote");
-}
+export { VaultNotOpenError, VaultService, VAULT_DEBOUNCE_MS } from "./vault-service";
+export type { ChangeKind, ParseNoteFn, VaultServiceDeps } from "./vault-service";
+export { contentHash } from "./hash";
+export { generateStubNote, slugifyFileName } from "./stub";
+export { systemTimer, ManualTimer } from "./timer";
+export type { TimerPort } from "./timer";
+export type { DirEntry, FsPort } from "./fs-port";
