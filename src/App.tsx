@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import "./App.css";
-import { EditorPane, LiveEditor } from "./editor";
-import { PreviewPane } from "./preview";
+import { LiveEditor } from "./editor";
 import { BacklinksPanel, FileTree, SearchPalette, select } from "./panels";
 import { lookupCandidates, useStore } from "./app/store";
 
@@ -66,14 +65,14 @@ function App() {
         <span className="wl-title">{vaultName}</span>
         <span className={`wl-chip wl-chip-${editorStatus}`}>{editorStatus}</span>
         <nav className="wl-segment" aria-label="Editor mode">
-          {(["live", "split", "source"] as const).map((mode) => (
+          {(["live", "source"] as const).map((mode) => (
             <button
               key={mode}
               type="button"
               className={`wl-seg${layout === mode ? " wl-seg-active" : ""}`}
               onClick={() => store().setLayout(mode)}
             >
-              {mode === "live" ? "Live" : mode === "split" ? "Split" : "Source"}
+              {mode === "live" ? "Live" : "Source"}
             </button>
           ))}
         </nav>
@@ -110,7 +109,7 @@ function App() {
           {!currentPath && (
             <p className="wl-empty muted">Select a note from the tree, or press Ctrl+K to search.</p>
           )}
-          {currentPath && layout !== "split" && (
+          {currentPath && (
             <LiveEditor
               path={currentPath}
               content={currentContent}
@@ -119,18 +118,6 @@ function App() {
               onStatusChange={(s) => useStore.setState({ editorStatus: s })}
               mode={layout === "live" ? "live" : "source"}
             />
-          )}
-          {currentPath && layout === "split" && (
-            <>
-              <EditorPane
-                path={currentPath}
-                content={currentContent}
-                lookup={lookupCandidates}
-                onSave={(p, c) => void store().saveNote(p, c)}
-                onStatusChange={(s) => useStore.setState({ editorStatus: s })}
-              />
-              <PreviewPane markdown={currentContent} onNavigate={(t) => void store().navigateWikilink(t)} />
-            </>
           )}
         </div>
       </section>

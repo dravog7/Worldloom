@@ -1,12 +1,10 @@
 /**
- * Reveal rule for ADR-005 live preview: which lines show raw markdown.
- *
- * A non-empty selection reveals exactly the lines it spans — selecting text
- * is precise intent (the user is looking at those lines). A caret reveals
- * its own line *and the immediate neighbours* (head line ± 1): while typing
- * at a construct's edge — right after a heading's hash run, inside a
- * wikilink, at a blockquote boundary — the neighbouring line's syntax stays
- * legible instead of flickering in and out under the cursor.
+ * Reveal rule for ADR-005 live preview (M1.2 interim, CTO direction):
+ * live mode must feel like a word processor — a selection NEVER flips to
+ * raw markdown. Only a caret reveals raw syntax, and only on its own line
+ * (what you are currently typing into). Construct-scoped reveal (markers of
+ * exactly the construct containing the caret, Obsidian-style) is the next
+ * refinement, pending the editor-models discovery.
  *
  * Pure over @codemirror/state's `Text` (no DOM, no view) so decorations can
  * be unit-tested headless.
@@ -25,14 +23,9 @@ export function revealLines(
 ): Set<number> {
   const lines = new Set<number>();
   for (const range of selections) {
-    const first = doc.lineAt(range.from).number;
-    const last = doc.lineAt(range.to).number;
-    for (let n = first; n <= last; n++) lines.add(n);
-    if (range.empty) {
-      // Caret: keep the neighbouring lines' syntax visible too.
-      if (first > 1) lines.add(first - 1);
-      if (last < doc.lines) lines.add(last + 1);
-    }
+    // Word-like rule: selections reveal nothing — only carets do.
+    if (!range.empty) continue;
+    lines.add(doc.lineAt(range.head).number);
   }
   return lines;
 }

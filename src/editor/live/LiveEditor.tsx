@@ -103,7 +103,9 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
   );
 
   const modeExtensions = (m: "live" | "source"): Extension[] =>
-    m === "live" ? [EditorView.lineWrapping, liveDecorations] : [];
+    m === "live"
+      ? [EditorView.lineWrapping, liveDecorations]
+      : [lineNumbers()]; // Word-like live view shows no line numbers
 
   // One editor view per note path; mode switches reconfigure in place.
   useEffect(() => {
@@ -115,7 +117,6 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
       state: EditorState.create({
         doc: content,
         extensions: [
-          lineNumbers(),
           history(),
           closeBrackets(),
           bracketMatching(),
@@ -192,7 +193,7 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
           </button>
         ))}
         <span className="wl-md-toolbar-hint">
-          {mode === "live" ? "Live preview — markdown hidden, revealed under cursor" : "Markdown source"}
+          {mode === "live" ? "Live — no code, only what you write" : "Markdown source"}
         </span>
       </div>
       <div ref={hostRef} className="wl-live-host" />

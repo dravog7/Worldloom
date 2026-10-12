@@ -33,8 +33,8 @@ const fs = new TauriFsAdapter();
 
 export type AppStatus = "boot" | "no-vault" | "loading" | "ready" | "error";
 export type EditorStatus = "saved" | "saving" | "dirty";
-/** Editor layout (ADR-005): live preview is the default; source is opt-in. */
-export type EditorLayout = "live" | "split" | "source";
+/** Editor layout (ADR-005, M1.2): two views — Word-like live + raw source. */
+export type EditorLayout = "live" | "source";
 
 interface StoreState {
   status: AppStatus;
@@ -180,7 +180,7 @@ export const useStore = create<StoreState>()((set, get) => {
       try {
         const settings = await Store.load(SETTINGS_FILE);
         const savedLayout = await settings.get<string>("layout");
-        if (savedLayout === "live" || savedLayout === "split" || savedLayout === "source") {
+        if (savedLayout === "live" || savedLayout === "source") {
           set({ layout: savedLayout });
         }
       } catch {
