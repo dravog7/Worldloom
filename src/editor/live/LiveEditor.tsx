@@ -26,6 +26,7 @@ import {
 } from "@codemirror/autocomplete";
 import { bracketMatching, syntaxTree } from "@codemirror/language";
 import { markdownLanguage } from "@codemirror/lang-markdown";
+import { installNativeClickMapping } from "./click-map";
 import { createAutosaveController } from "../autosave";
 import { createWikilinkCompletionSource, type WikilinkLookup } from "../autocomplete";
 import { shouldReplaceDoc } from "../doc-sync";
@@ -41,6 +42,11 @@ export interface LiveEditorProps {
   onStatusChange: (status: "saved" | "saving" | "dirty") => void;
   mode: "live" | "source";
 }
+
+// Click accuracy: CM6's posAtCoords misplaces clicks by one line whenever a
+// line decoration is active (see click-map.ts for the full evidence); the
+// native hit-testing override restores exact mapping. Installed once.
+installNativeClickMapping();
 
 /** Decoration field: recompute on every doc/selection change (M1 scale). */
 export const liveDecorations = StateField.define<DecorationSet>({
