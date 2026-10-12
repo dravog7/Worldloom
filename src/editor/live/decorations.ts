@@ -1,11 +1,16 @@
 /**
  * Live-preview decorations (ADR-005): markdown stays the storage bytes;
  * syntax is hidden with replace decorations and styled with marks. A
- * construct on a *revealed* line (see `reveal.ts`) keeps its raw syntax
- * visible instead of being hidden.
+ * construct keeps its raw syntax visible only when `isConstructRevealed`
+ * says so (see `reveal.ts`): the caret is inside that construct — inclusive
+ * of both edges — or a selection partially cuts it. Nothing else reveals:
+ * no whole lines, no merely-selected regions (docs/DISCOVERY-editor-models
+ * §3–§4). Block-level constructs (heading, quote, list item, rule, fenced
+ * block) reveal as a unit over their syntax-node span; inline constructs
+ * (strong/em/code/wikilink) over their exact span.
  *
- * Pure function over (doc, lezer syntax tree, revealed lines) — no view, no
- * DOM at computation time — so the whole preview surface is unit-testable
+ * Pure function over (doc, lezer syntax tree, selection ranges) — no view,
+ * no DOM at computation time — so the whole preview surface is unit-testable
  * in plain Node (widgets only touch the DOM in `toDOM`, when rendered).
  *
  * Robustness rule: whenever the parser does not cleanly delimit a construct
@@ -14,9 +19,10 @@
  * would corrupt the document.
  */
 
-import type { Text } from "@codemirror/state";
+import type { SelectionRange, Text } from "@codemirror/state";
 import { Decoration, DecorationSet, WidgetType } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { isConstructRevealed } from "./reveal";
 
 /** Revealed heading hashes: raw text shown, dimmed. */
 class RawSyntaxWidget extends WidgetType {
@@ -83,13 +89,14 @@ const RULE_LINE = /^[-*_]{3,}$/u;
  *
  * @param doc         The markdown document (storage bytes).
  * @param syntaxNode  Root of the @lezer/markdown parse (`tree.topNode`).
- * @param revealLines Line numbers (1-based) whose raw syntax stays visible.
+ * @param selections  All selection ranges; reveal is scoped per construct
+ *                    against these (multi-cursor aware).
  * @returns A sorted DecorationSet; replace ranges never overlap.
  */
 export function computeDecorations(
   doc: Text,
   syntaxNode: SyntaxNode,
-  revealLines: ReadonlySet<number>,
+  selections: readonly SelectionRange[],
 ): DecorationSet {
   const tree = syntaxNode.tree;
   if (!tree) return Decoration.none;
@@ -98,9 +105,9 @@ export function computeDecorations(
   const lined = new Set<string>();
   let lastReplaceTo = 0;
 
-  /** A construct is revealed when the line it starts on is revealed. */
-  const revealed = (node: { from: number }): boolean =>
-    revealLines.has(doc.lineAt(node.from).number);
+  /** A construct reveals its raw syntax iff the caret/selection rule says so. */
+  const revealed = (node: { from: number; to: number }): boolean =>
+    isConstructRevealed(node.from, node.to, selections);
 
   const pushLine = (from: number, cls: string): void => {
     const key = `${from}|${cls}`;
@@ -131,11 +138,14 @@ export function computeDecorations(
 
   const heading = (node: SyntaxNode, level: 1 | 2 | 3): void => {
     lineClassFor(doc.lineAt(node.from).number, HEADING_CLASSES[level]);
+    // The heading node (hashes + text) is the reveal unit: typing anywhere
+    // in it — including at the line's end — keeps the hashes visible.
+    const show = revealed(node);
     for (let child = node.firstChild; child; child = child.nextSibling) {
       if (child.name !== "HeaderMark") continue;
       const raw = doc.sliceString(child.from, child.to);
       if (!HASH_RUN.test(raw)) continue; // parser oddity → leave raw
-      if (revealed(child)) pushReplace(child.from, child.to, hashWidget(raw));
+      if (show) pushReplace(child.from, child.to, hashWidget(raw));
       else pushReplace(child.from, child.to);
     }
   };
@@ -193,11 +203,15 @@ export function computeDecorations(
   /**
    * The `>` marker is handled wherever it appears in the tree: markdown's
    * lazy continuation nests a follow-up line's QuoteMark inside the
-   * paragraph, not as a direct Blockquote child.
+   * paragraph, not as a direct Blockquote child. The reveal unit is the
+   * whole quote block (markers show while the caret is anywhere in it,
+   * Typora/Obsidian-style), so walk up to the enclosing Blockquote.
    */
   const quoteMark = (node: SyntaxNode): void => {
     if (doc.sliceString(node.from, node.to).trim() !== ">") return;
-    if (!revealed(node)) pushReplace(node.from, node.to);
+    let scope: SyntaxNode | null = node.parent;
+    while (scope && scope.name !== "Blockquote") scope = scope.parent;
+    if (!revealed(scope ?? node)) pushReplace(node.from, node.to);
   };
 
   const listItem = (node: SyntaxNode): void => {
@@ -205,7 +219,8 @@ export function computeDecorations(
     if (!mark || mark.name !== "ListMark") return;
     // Ordered-list marks (`1.`) are not bullets — leave them raw.
     if (!BULLET_MARK.test(doc.sliceString(mark.from, mark.to))) return;
-    if (!revealed(mark)) pushReplace(mark.from, mark.to, bulletWidget());
+    // The item (marker + content) is the reveal unit, like a heading.
+    if (!revealed(node)) pushReplace(mark.from, mark.to, bulletWidget());
   };
 
   const horizontalRule = (node: SyntaxNode): void => {
@@ -221,10 +236,13 @@ export function computeDecorations(
     const first = doc.lineAt(node.from).number;
     const last = doc.lineAt(node.to).number;
     for (let n = first; n <= last; n++) lineClassFor(n, "wl-md-fenced");
+    // The whole block is the reveal unit: a caret anywhere inside (including
+    // the code content) shows both fence delimiters.
+    const show = revealed(node);
     for (let child = node.firstChild; child; child = child.nextSibling) {
       if (child.name !== "CodeMark") continue;
       if (!FENCE_RUN.test(doc.sliceString(child.from, child.to))) continue;
-      if (!revealed(child)) pushReplace(child.from, child.to);
+      if (!show) pushReplace(child.from, child.to);
     }
   };
 

@@ -31,7 +31,7 @@ describe("liveDecorations field inside a real EditorState", () => {
 
   it("recomputes on selection moves without throwing", () => {
     const state = makeState();
-    const tr = state.update({ selection: { anchor: 3 } }); // inside the H1 line → reveal set changes
+    const tr = state.update({ selection: { anchor: 3 } }); // caret inside the H1 heading → that heading reveals
     const before = state.field(liveDecorations).size;
     const after = tr.state.field(liveDecorations).size;
     expect(after).toBeGreaterThan(0);

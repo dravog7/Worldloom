@@ -30,7 +30,6 @@ import { createAutosaveController } from "../autosave";
 import { createWikilinkCompletionSource, type WikilinkLookup } from "../autocomplete";
 import { shouldReplaceDoc } from "../doc-sync";
 import { computeDecorations } from "./decorations";
-import { revealLines } from "./reveal";
 import { applyToolbarAction, type ToolbarAction } from "./toolbar";
 import "./live.css";
 
@@ -49,7 +48,7 @@ export const liveDecorations = StateField.define<DecorationSet>({
     return computeDecorations(
       state.doc,
       syntaxTree(state).topNode,
-      revealLines(state.selection.ranges, state.doc),
+      state.selection.ranges,
     );
   },
   update(value, tr) {
@@ -57,7 +56,7 @@ export const liveDecorations = StateField.define<DecorationSet>({
     return computeDecorations(
       tr.state.doc,
       syntaxTree(tr.state).topNode,
-      revealLines(tr.state.selection.ranges, tr.state.doc),
+      tr.state.selection.ranges,
     );
   },
   provide: (field) => EditorView.decorations.from(field),
