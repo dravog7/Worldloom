@@ -1,6 +1,6 @@
 /**
  * M2 Wave C1 — Tauri invoke wrappers for the Wave-A1 keyring commands
- * (src-tauri/src/ai_key.rs) plus the Wave-A2 `ai_chat` proxy seam.
+ * (src-tauri/src/ai_key.rs).
  *
  * Command shapes verified against ai_key.rs (do not guess):
  *   key_set(key: String)  -> Result<(), KeyringError>   // {kind,message} on error
@@ -9,9 +9,13 @@
  *
  * The pasted key enters Rust here and never returns: this module can only
  * set it and ask whether one is present (ADR-006 §2).
+ *
+ * The Wave-A2 `ai_chat` proxy seam now lives in ./ai-tauri (the Transport
+ * adapter) and is re-exported here so existing call sites keep one import.
  */
 import { invoke } from "@tauri-apps/api/core";
-import type { AiResponse, ChatRequest } from "../../core/ai/types";
+
+export { aiTransport, chatViaProxy, toAiError } from "./ai-tauri";
 
 /** Store the pasted key in the OS keyring, replacing any existing value. */
 export async function setAiKey(key: string): Promise<void> {
@@ -30,31 +34,4 @@ export function keyringErrorMessage(error: unknown): string {
     if (typeof message === "string" && message !== "") return message;
   }
   return String(error);
-}
-
-/**
- * Test-connection seam for the Rust `ai_chat` proxy (ADR-006 §1): the
- * renderer sends the request WITHOUT a credential and Rust injects the key
- * from the keyring.
- *
- * Command shapes verified against src-tauri/src/ai_chat.rs (serde):
- *   ChatRequest  { baseUrl, model, messages, temperature?, max_tokens? }
- *   ChatResponse { content, usage?, latency_ms }
- *   AiError      adjacently tagged {kind, message}, kebab-case kinds.
- */
-export async function chatViaProxy(req: ChatRequest): Promise<AiResponse> {
-  const raw = await invoke<{
-    content: string;
-    usage?: { prompt_tokens: number; completion_tokens: number };
-    latency_ms: number;
-  }>("ai_chat", {
-    request: {
-      baseUrl: req.baseUrl,
-      model: req.model,
-      messages: req.messages,
-      temperature: req.temperature,
-      max_tokens: req.max_tokens,
-    },
-  });
-  return { content: raw.content, usage: raw.usage, latencyMs: raw.latency_ms };
 }

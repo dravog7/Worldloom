@@ -95,7 +95,13 @@ export function resolveProvider(
  * before any socket; this is the fast-fail copy for UI feedback).
  * ------------------------------------------------------------------ */
 
-/** https everywhere; http only for loopback (Ollama). */
+/**
+ * https everywhere; http only for loopback (Ollama). Mirrors the Rust
+ * authority `validate_endpoint` (src-tauri/src/ai_chat.rs) EXACTLY — the
+ * fast-fail copy must not promise endpoints the proxy then refuses at the
+ * seam: loopback means 127.0.0.1 / localhost (no IPv6 literal), and
+ * credentials embedded in the URL are rejected for every scheme.
+ */
 export function assertEndpointAllowed(baseUrl: string): void {
   let url: URL;
   try {
@@ -103,10 +109,16 @@ export function assertEndpointAllowed(baseUrl: string): void {
   } catch {
     throw new AiError("invalid-endpoint", `Not a valid URL: ${baseUrl}`);
   }
+  if (url.username !== "" || url.password !== "") {
+    throw new AiError(
+      "invalid-endpoint",
+      `Credentials embedded in the URL are not allowed: ${baseUrl}`,
+    );
+  }
   if (url.protocol === "https:") return;
   const isLoopback =
     url.protocol === "http:" &&
-    (url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "[::1]");
+    (url.hostname === "127.0.0.1" || url.hostname === "localhost");
   if (isLoopback) return;
   throw new AiError(
     "invalid-endpoint",

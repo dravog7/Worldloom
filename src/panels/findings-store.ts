@@ -1,17 +1,22 @@
 /**
  * M2 Wave D2 — panel-LOCAL UI state for the Findings panel (PLAN-M2 §D2).
  *
- * Holds only ephemeral view state: the running flag, LLM batch progress,
- * expanded note groups, the refresh counter, and the last error. Findings
- * themselves are NEVER stored here — the panel derives rows from findings +
- * tombstones (buildFindingRows) and bumps `refreshCounter` after every audit
- * or dismissal to re-derive. Tombstones live in the AuditStatePort file, not
- * here; a panel remount re-reads them and loses nothing.
+ * Holds the ephemeral view state (running flag, LLM batch progress, expanded
+ * note groups, refresh counter, last error) PLUS the last run's findings and
+ * pre-plan/estimate. Findings live here because the App rail unmounts this
+ * panel on every tab switch and a re-audit cannot re-derive them: after a
+ * completed LLM pass `lastAudit` makes the plan batch-free, so paid findings
+ * stored anywhere mount-scoped are gone for good (M2 I4 #2). The panel
+ * derives rows from `findings` + tombstones (buildFindingRows). Tombstones
+ * live in the AuditStatePort file, not here; a panel remount re-reads them
+ * and loses nothing.
  *
  * `createFindingsUiStore()` exists so tests get isolated instances; the panel
  * uses the module singleton (one findings panel per app, I1 wiring).
  */
 import { create } from "zustand";
+import type { AuditFinding } from "../core/audit/llm";
+import type { AuditCostEstimate, AuditPassPlan } from "../core/audit/findings-view";
 
 export type FindingsPhase =
   | "idle" // nothing run yet this session
@@ -33,6 +38,13 @@ export interface FindingsUiState {
   refreshCounter: number;
   /** Human-readable failure from the last run; null when healthy. */
   lastError: string | null;
+  /** Raw findings from the last run (rules + retained LLM) — survives remounts. */
+  findings: AuditFinding[];
+  /** Last LLM pre-plan + cost estimate (keeps the confirm dialog alive). */
+  plan: AuditPassPlan | null;
+  estimate: AuditCostEstimate | null;
+  /** At least one audit ran — drives the Re-audit label + first-run expand. */
+  hasRun: boolean;
 }
 
 export const initialFindingsUiState: FindingsUiState = {
@@ -43,6 +55,10 @@ export const initialFindingsUiState: FindingsUiState = {
   expanded: new Set<string>(),
   refreshCounter: 0,
   lastError: null,
+  findings: [],
+  plan: null,
+  estimate: null,
+  hasRun: false,
 };
 
 export interface FindingsUiActions {
@@ -54,6 +70,11 @@ export interface FindingsUiActions {
   toggleGroup(path: string): void;
   bumpRefresh(): void;
   setError(message: string | null): void;
+  /** Replaces the raw findings (new run result; tombstone filtering is later). */
+  setFindings(findings: AuditFinding[]): void;
+  /** Stores the latest pre-run plan + estimate for the confirm dialog. */
+  setAuditPlan(plan: AuditPassPlan | null, estimate: AuditCostEstimate | null): void;
+  setHasRun(hasRun: boolean): void;
   reset(): void;
 }
 
@@ -74,8 +95,18 @@ export function createFindingsUiStore() {
     },
     bumpRefresh: () => set({ refreshCounter: get().refreshCounter + 1 }),
     setError: (message) => set({ lastError: message }),
+    setFindings: (findings) => set({ findings }),
+    setAuditPlan: (plan, estimate) => set({ plan, estimate }),
+    setHasRun: (hasRun) => set({ hasRun }),
     reset: () =>
-      set({ ...initialFindingsUiState, expanded: new Set<string>(), lastError: null }),
+      set({
+        ...initialFindingsUiState,
+        expanded: new Set<string>(),
+        findings: [],
+        plan: null,
+        estimate: null,
+        lastError: null,
+      }),
   }));
 }
 

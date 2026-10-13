@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { LiveEditor } from "./editor";
 import {
@@ -15,6 +15,7 @@ import { useAiCapability } from "./app/AiGate";
 import { chatViaProxy } from "./app/adapters/ai-key";
 import { tauriAuditStatePort } from "./app/adapters/audit-state";
 import { getIndex, lookupCandidates, useStore } from "./app/store";
+import { useFindingsUi } from "./panels/findings-store";
 
 /** M2 right-rail surfaces (audit findings / extraction / ask). */
 type RailTab = "audit" | "extract" | "ask";
@@ -60,6 +61,17 @@ function App() {
   useEffect(() => {
     void useStore.getState().boot();
   }, []);
+
+  // The findings store is a module singleton that intentionally survives
+  // panel unmounts (M2 I4 #2) — so a vault switch must clear it explicitly
+  // or paid findings from vault A would render under vault B (I4 H3).
+  const lastVaultRef = useRef(vaultName);
+  useEffect(() => {
+    if (lastVaultRef.current !== vaultName) {
+      lastVaultRef.current = vaultName;
+      useFindingsUi.getState().reset();
+    }
+  }, [vaultName]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

@@ -31,6 +31,7 @@ vi.mock("./app/adapters/audit-state", () => ({
 
 import App from "./App";
 import { useStore } from "./app/store";
+import { useFindingsUi } from "./panels/findings-store";
 import { DEFAULT_AI_SETTINGS } from "./core/ai/settings";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -124,5 +125,39 @@ describe("App — AI right rail (M2 I1)", () => {
     await clickTab(container, "Extract");
     expect(container.querySelector("section[aria-label='Findings']")).toBeNull();
     expect(container.textContent).toContain("Open a note to extract entities");
+  });
+
+  it("switching vaults resets retained audit findings (no cross-vault leakage)", async () => {
+    const container = await mountApp();
+    await clickTab(container, "Audit");
+    // Simulate findings retained by the singleton store (e.g. a paid LLM
+    // pass) whose evidence belongs to the CURRENT vault.
+    act(() => {
+      useFindingsUi.setState({
+        hasRun: true,
+        expanded: new Set(["people/Ellara.md"]),
+        findings: [
+          {
+            id: "llm-x",
+            kind: "llm-contradiction",
+            noteA: "people/Ellara.md",
+            lineA: 0,
+            quoteA: "Captain of the Meridian.",
+            noteB: "people/Other.md",
+            lineB: 0,
+            quoteB: "A different Ellara entirely.",
+            message: "Cross-vault leftover",
+          },
+        ],
+      });
+    });
+    expect(container.textContent).toContain("Cross-vault leftover");
+
+    await act(async () => {
+      useStore.setState({ vaultName: "another-vault" });
+    });
+    expect(container.textContent).not.toContain("Cross-vault leftover");
+    expect(container.textContent).toContain("No contradictions found.");
+    useFindingsUi.getState().reset();
   });
 });

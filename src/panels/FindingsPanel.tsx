@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from "react";
+import { useEffect, useMemo, useState, type JSX } from "react";
 import type { AiSettings } from "../core/ai/settings";
 import type { Transport } from "../core/ai/types";
 import type { IndexProvider } from "../core/index/provider";
@@ -9,8 +9,6 @@ import {
   groupFindingsByNote,
   llmAuditGate,
   planAuditPass,
-  type AuditCostEstimate,
-  type AuditPassPlan,
 } from "../core/audit/findings-view";
 import {
   dismissFinding,
@@ -21,9 +19,9 @@ import {
   serializeAuditState,
   type AuditState,
   type AuditStatePort,
+  type LlmFinding,
 } from "../core/audit/llm";
 import { auditRules, type Finding } from "../core/audit/rules";
-import type { AuditFinding } from "../core/audit/llm";
 import { useFindingsUi } from "./findings-store";
 import "./panels.css";
 
@@ -43,9 +41,13 @@ import "./panels.css";
  * - Dismiss writes a tombstone through the injected AuditStatePort FIRST,
  *   then re-derives rows (buildFindingRows filters isDismissed after merge),
  *   so a dismissed finding stays gone across re-audits and remounts.
- * - Panel-local UI state (running/progress/expanded/refresh) lives in the
- *   findings-store zustand store; findings themselves are derived, never
- *   stored there.
+ * - Findings, the last pre-plan/estimate, and hasRun live in the
+ *   findings-store zustand store (module singleton): the App rail unmounts
+ *   this panel on tab switches, and a re-audit of an unchanged vault plans
+ *   zero LLM batches, so paid LLM findings must outlive the mount (M2 I4 #2).
+ *   Retained LLM findings are re-validated per re-audit: both evidence
+ *   notes must be unchanged since their last audit, else they retire until
+ *   the next LLM pass. Tombstones still live in the AuditStatePort file.
  *
  * The LLM transport is injected (default: none → rules-only), keeping this
  * component Tauri-free like every panel (I1 wires chatViaProxy in).
@@ -72,20 +74,13 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
   const [auditState, setAuditState] = useState<AuditState>(
     props.initialAuditState ?? emptyAuditState(),
   );
-  // Raw findings from the last run (rules, then merged LLM). Kept in a ref:
-  // the rendered rows derive from refreshCounter + auditState + expanded.
-  const rawRef = useRef<AuditFinding[]>([]);
-  const planRef = useRef<AuditPassPlan | null>(null);
-  const estimateRef = useRef<AuditCostEstimate | null>(null);
-  const hasRunRef = useRef(false);
-
   const gate = llmAuditGate(props.aiSettings, props.aiKeyPresent ?? null);
 
   const rows = useMemo(
-    () => buildFindingRows(rawRef.current, { auditState, expanded: ui.expanded }),
+    () => buildFindingRows(ui.findings, { auditState, expanded: ui.expanded }),
     // refreshCounter participates deliberately: each audit/dismiss bumps it
-    // to force a re-derivation from the ref + current tombstones.
-    [ui.refreshCounter, ui.expanded, auditState],
+    // to force a re-derivation from the store findings + current tombstones.
+    [ui.refreshCounter, ui.expanded, auditState, ui.findings],
   );
   const visibleCount = rows.reduce((sum, group) => sum + group.findings.length, 0);
 
@@ -117,20 +112,35 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
       // Re-read tombstones so this run suppresses anything dismissed since.
       const state = loadAuditState(await props.auditStatePort.read());
       setAuditState(state);
-      // Rules pass — offline, instant, always. Replaces the previous run.
+      // Rules pass — offline, instant, always. Replaces the previous run's
+      // rules findings; paid LLM findings are RETAINED (M2 I4 #2) while
+      // both of their evidence notes are unchanged since their last audit —
+      // otherwise their quotes may no longer be verbatim and they retire
+      // until the next LLM pass (which the changed mtime makes payable).
       const rules: Finding[] = auditRules(provider);
-      rawRef.current = rules;
-      // LLM pre-plan: same batching/token accounting the audit will use.
       const notes = provider.all();
+      const mtimeByPath = new Map(notes.map((note) => [note.path, note.mtime]));
+      const unchangedSinceAudit = (path: string | undefined): boolean =>
+        path !== undefined && state.lastAudit[path] === mtimeByPath.get(path);
+      const retainedLlm = ui.findings.filter(
+        (finding): finding is LlmFinding =>
+          finding.kind === "llm-contradiction" &&
+          unchangedSinceAudit(finding.noteA) &&
+          unchangedSinceAudit(finding.noteB),
+      );
+      ui.setFindings(mergeAuditFindings(rules, retainedLlm));
+      // LLM pre-plan: same batching/token accounting the audit will use.
       const plan = planAuditPass(notes, state);
-      planRef.current = plan;
-      estimateRef.current = estimateAuditCost(notes.length, plan.batches, {
-        priceInputPerM: props.aiSettings.priceInputPerM,
-        priceOutputPerM: props.aiSettings.priceOutputPerM,
-        tokensPerBatch: plan.tokensPerBatch,
-      });
-      if (!hasRunRef.current) {
-        hasRunRef.current = true;
+      ui.setAuditPlan(
+        plan,
+        estimateAuditCost(notes.length, plan.batches, {
+          priceInputPerM: props.aiSettings.priceInputPerM,
+          priceOutputPerM: props.aiSettings.priceOutputPerM,
+          tokensPerBatch: plan.tokensPerBatch,
+        }),
+      );
+      if (!ui.hasRun) {
+        ui.setHasRun(true);
         ui.setExpanded(groupFindingsByNote(rules).map((group) => group.path));
       }
       ui.bumpRefresh();
@@ -159,7 +169,9 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
   const confirmLlm = async (): Promise<void> => {
     const provider = props.provider;
     const transport = props.transport;
-    const plan = planRef.current;
+    // Latest store snapshot — the dialog (and this run) must survive the
+    // panel unmounting mid-confirmation (rail tab switch).
+    const plan = useFindingsUi.getState().plan;
     if (provider === null || transport === undefined || plan === null || plan.batches === 0) {
       cancelLlm();
       return;
@@ -182,11 +194,15 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
         baseUrl: props.aiSettings.baseUrl,
         model: props.aiSettings.model,
       });
-      // Fresh rules findings + this run's LLM findings; the row build then
-      // applies the tombstone filter (isDismissed) to the merged list.
-      rawRef.current = mergeAuditFindings(
-        rawRef.current.filter((finding) => finding.kind !== "llm-contradiction"),
-        result.findings,
+      // Fresh rules findings + this run's LLM findings (previous LLM
+      // findings are replaced); the row build then applies the tombstone
+      // filter (isDismissed) to the merged list.
+      const prior = useFindingsUi.getState().findings;
+      ui.setFindings(
+        mergeAuditFindings(
+          prior.filter((finding) => finding.kind !== "llm-contradiction"),
+          result.findings,
+        ),
       );
       setAuditState(result.state);
       ui.bumpRefresh();
@@ -217,8 +233,8 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
     props.onOpenNote(note, line >= 0 ? line : undefined);
   };
 
-  const estimate = estimateRef.current;
-  const plan = planRef.current;
+  const estimate = ui.estimate;
+  const plan = ui.plan;
   const pricesUnset =
     props.aiSettings.priceInputPerM === 0 && props.aiSettings.priceOutputPerM === 0;
 
@@ -234,7 +250,7 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
           disabled={props.provider === null || ui.running}
           onClick={() => void runAudit()}
         >
-          {ui.running ? "Auditing…" : hasRunRef.current ? "Re-audit" : "Run audit"}
+          {ui.running ? "Auditing…" : ui.hasRun ? "Re-audit" : "Run audit"}
         </button>
       </header>
 
@@ -310,8 +326,16 @@ export function FindingsPanel(props: FindingsPanelProps): JSX.Element {
           <div
             className="wl-panel wl-estimate"
             role="dialog"
+            aria-modal="true"
             aria-label="Confirm AI audit"
             onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              // a11y (I4): Escape dismisses the dialog like the Cancel button.
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                cancelLlm();
+              }
+            }}
           >
             <div className="wl-panel-header">ai audit — cost estimate</div>
             <div className="wl-estimate-body">

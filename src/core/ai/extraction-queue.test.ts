@@ -254,6 +254,24 @@ describe("ExtractionQueue — cancel", () => {
     expect(progress).toEqual([[1, 1]]);
   });
 
+  it("enqueue DURING a cancelled in-flight note still runs (pump restarts after cancel)", async () => {
+    const inFlight = deferred<AiResponse>();
+    const { queue, transport, results } = makeHarness([
+      () => inFlight.promise,
+      proposalsResponse('{"proposals":[]}'),
+    ]);
+    queue.enqueue(NOTE_A);
+    await flush();
+    expect(transport.calls).toHaveLength(1);
+    queue.cancel();
+    // Enqueue while the cancelled note is STILL in flight: the old pump
+    // exits on its generation check, so the new note needs a fresh pump.
+    queue.enqueue(NOTE_B);
+    inFlight.resolve({ content: '{"proposals":[]}', latencyMs: 1 });
+    await queue.waitIdle();
+    expect(results.map((r) => r.note.path)).toEqual(["b.md"]);
+  });
+
   it("cancel while paused with pending notes clears them silently", async () => {
     const first = deferred<AiResponse>();
     const { queue, results } = makeHarness([() => first.promise]);

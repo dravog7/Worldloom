@@ -66,6 +66,9 @@ export function ExtractionPanel(props: ExtractionPanelProps): JSX.Element {
   // The queue's async callbacks read the latest tombstones, not a snapshot.
   const dismissedRef = useRef(dismissed);
   dismissedRef.current = dismissed;
+  // Latest open note path — stale-result guard for the async callbacks.
+  const notePathRef = useRef(note.path);
+  notePathRef.current = note.path;
 
   // One queue per transport/endpoint pair; cancelled on swap/unmount.
   const queueRef = useRef<ExtractionQueue | null>(null);
@@ -77,7 +80,11 @@ export function ExtractionPanel(props: ExtractionPanelProps): JSX.Element {
     const queue = new ExtractionQueue({
       transport,
       endpoint,
-      onResult: (_note, outcome) => {
+      onResult: (finished, outcome) => {
+        // Stale-result guard (M2 I4 #3): a reply for a note the user already
+        // switched away from must never render into the new note's panel —
+        // and therefore never be accepted into the new note's frontmatter.
+        if (finished.path !== notePathRef.current) return;
         setRunning(false);
         setProgress(null);
         if (!outcome.ok) {
@@ -103,8 +110,11 @@ export function ExtractionPanel(props: ExtractionPanelProps): JSX.Element {
     };
   }, [transport, endpoint]);
 
-  // Switching notes discards the previous note's pending proposals.
+  // Switching notes discards the previous note's pending proposals AND
+  // cancels any in-flight extraction (M2 I4 #3): its result belongs to the
+  // old note and must never surface under — or be written into — the new one.
   useEffect(() => {
+    queueRef.current?.cancel();
     setRows([]);
     setRunning(false);
     setApplied(false);
@@ -156,15 +166,22 @@ export function ExtractionPanel(props: ExtractionPanelProps): JSX.Element {
 
   const acceptSelected = async (): Promise<void> => {
     if (checkedCount === 0 || busy) return;
+    // Capture the note this accept belongs to; props may change mid-save.
+    const path = note.path;
     setBusy(true);
     setNotice(null);
     try {
       const merged = applyProposalsToSource(
-        { path: note.path, source: note.source },
+        { path, source: note.source },
         rows.map((row) => row.proposal),
         acceptedFlagsFor(rows),
       );
-      await onSave(note.path, merged);
+      await onSave(path, merged);
+      if (notePathRef.current !== path) {
+        // Switched notes while saving: the note-switch effect already reset
+        // the UI — no "applied" flash under the new note (I4 hardening H2).
+        return;
+      }
       setRows([]);
       setApplied(true);
     } catch (error) {

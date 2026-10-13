@@ -147,6 +147,34 @@ describe("buildChatRequest — OpenAI-completions request builder", () => {
       buildChatRequest({ baseUrl: "http://192.168.1.5:11434/v1", model: "m", messages: [] }),
     ).toThrowError(AiError);
   });
+
+  // I3 hardening: the renderer fast-fail must mirror the Rust authority
+  // (ai_chat.rs validate_endpoint) exactly — it may not promise endpoints the
+  // proxy then refuses at the seam.
+  it("rejects IPv6-literal loopback ([::1]) — Rust accepts only 127.0.0.1/localhost", () => {
+    for (const baseUrl of ["http://[::1]:11434/v1", "http://[::1]/v1"]) {
+      try {
+        buildChatRequest({ baseUrl, model: "m", messages: [] });
+        throw new Error(`expected throw for ${baseUrl}`);
+      } catch (e) {
+        expect((e as AiError).kind).toBe("invalid-endpoint");
+      }
+    }
+  });
+
+  it("rejects embedded credentials in the base URL (mirrors the Rust gate)", () => {
+    for (const baseUrl of [
+      "https://user:pass@example.com/v1",
+      "https://user@example.com/v1",
+    ]) {
+      try {
+        buildChatRequest({ baseUrl, model: "m", messages: [] });
+        throw new Error(`expected throw for ${baseUrl}`);
+      } catch (e) {
+        expect((e as AiError).kind).toBe("invalid-endpoint");
+      }
+    }
+  });
 });
 
 describe("resolveProvider — preset resolution", () => {

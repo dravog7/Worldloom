@@ -13,6 +13,7 @@ import {
   buildFindingRows,
   estimateAuditCost,
   planAuditPass,
+  type AuditPassPlan,
 } from "../core/audit/findings-view";
 import {
   dismissFinding,
@@ -23,6 +24,7 @@ import {
   serializeAuditState,
   vaultFingerprint,
   type AuditStatePort,
+  type LlmFinding,
 } from "../core/audit/llm";
 import { auditRules } from "../core/audit/rules";
 import { estimateCostUsd } from "../core/ai/settings";
@@ -160,6 +162,41 @@ describe("findings UI store (panel-local only)", () => {
     const other = createFindingsUiStore();
     other.getState().toggleGroup("z.md");
     expect(store.getState().expanded.size).toBe(0);
+  });
+
+  it("carries paid LLM findings, the plan, and hasRun across remounts; reset clears all (M2 I4 #2)", () => {
+    const store = createFindingsUiStore();
+    const finding: LlmFinding = {
+      id: "llm-1",
+      kind: "llm-contradiction",
+      noteA: "a.md",
+      lineA: 0,
+      quoteA: "quote A",
+      noteB: "b.md",
+      lineB: 0,
+      quoteB: "quote B",
+      message: "contradiction",
+    };
+    const plan: AuditPassPlan = {
+      pendingNotes: [],
+      batches: 1,
+      totalInputTokens: 120,
+      tokensPerBatch: 120,
+    };
+
+    store.getState().setFindings([finding]);
+    store.getState().setAuditPlan(plan, { inputUsd: 0.001, totalUsd: 0.002 });
+    store.getState().setHasRun(true);
+    expect(store.getState().findings).toEqual([finding]);
+    expect(store.getState().plan).toEqual(plan);
+    expect(store.getState().estimate).toEqual({ inputUsd: 0.001, totalUsd: 0.002 });
+    expect(store.getState().hasRun).toBe(true);
+
+    store.getState().reset();
+    expect(store.getState().findings).toEqual([]);
+    expect(store.getState().plan).toBeNull();
+    expect(store.getState().estimate).toBeNull();
+    expect(store.getState().hasRun).toBe(false);
   });
 });
 

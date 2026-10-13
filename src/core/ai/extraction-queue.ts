@@ -181,6 +181,10 @@ export class ExtractionQueue {
     const generation = this.generation;
     this.pumpDone = this.drain(generation).finally(() => {
       this.pumping = false;
+      // A cancelled drain exits while its in-flight note unwinds; a note
+      // enqueued in that window sits in pending with no pump (startPump
+      // early-returned). Restart so it still runs (M2 I4 #3).
+      if (this.pending.length > 0 && !this.pausedFlag) this.startPump();
     });
   }
 
