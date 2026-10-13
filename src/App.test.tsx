@@ -71,8 +71,9 @@ async function clickTab(container: HTMLDivElement, label: string): Promise<void>
 
 afterEach(async () => {
   if (mounted) {
-    await act(async () => mounted.root.unmount());
-    mounted.container.remove();
+    const { root, container } = mounted;
+    await act(async () => root.unmount());
+    container.remove();
     mounted = null;
   }
   vi.restoreAllMocks();
