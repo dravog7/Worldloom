@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import "./App.css";
 import { LiveEditor } from "./editor";
-import { BacklinksPanel, FileTree, SearchPalette, select } from "./panels";
+import { AiSettingsPanel, BacklinksPanel, FileTree, SearchPalette, select } from "./panels";
 import { lookupCandidates, useStore } from "./app/store";
 
 /**
@@ -22,6 +22,9 @@ function App() {
   const backlinks = useStore((s) => s.backlinks);
   const search = useStore((s) => s.search);
   const layout = useStore((s) => s.layout);
+  const aiSettings = useStore((s) => s.aiSettings);
+  const aiSettingsOpen = useStore((s) => s.aiSettingsOpen);
+  const aiKeyPresent = useStore((s) => s.aiKeyPresent);
   const store = useStore.getState;
 
   useEffect(() => {
@@ -76,6 +79,9 @@ function App() {
             </button>
           ))}
         </nav>
+        <button className="wl-btn wl-btn-ghost" onClick={() => store().openAiSettings()}>
+          AI settings
+        </button>
         <button className="wl-btn wl-btn-ghost" onClick={() => store().dispatchSearch({ type: "open" })}>
           Search ⌘K
         </button>
@@ -137,6 +143,16 @@ function App() {
           }
         }}
         onClose={() => store().dispatchSearch({ type: "close" })}
+      />
+
+      <AiSettingsPanel
+        open={aiSettingsOpen}
+        settings={aiSettings}
+        keyPresent={aiKeyPresent}
+        onClose={() => store().closeAiSettings()}
+        onChange={(next) => store().setAiSettings(next)}
+        onSaveKey={(key) => store().saveAiKey(key)}
+        onTestConnection={() => store().testAiConnection()}
       />
     </div>
   );

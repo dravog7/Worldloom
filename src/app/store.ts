@@ -28,6 +28,14 @@ import {
 import { TauriFsAdapter } from "./adapters/tauri-fs";
 import { pickVaultFolder } from "./adapters/folder-dialog";
 import { loadVaultPath, saveVaultPath } from "./adapters/vault-path";
+import { chatViaProxy, getAiKeyStatus, keyringErrorMessage, setAiKey } from "./adapters/ai-key";
+import { buildChatRequest } from "../core/ai/client";
+import {
+  DEFAULT_AI_SETTINGS,
+  parseAiSettings,
+  serializeAiSettings,
+  type AiSettings,
+} from "../core/ai/settings";
 
 const fs = new TauriFsAdapter();
 
@@ -50,6 +58,11 @@ interface StoreState {
   backlinks: BacklinkGroup[];
   search: SearchState;
   layout: EditorLayout;
+  /** M2 Wave C1 — BYO-AI settings. NEVER contains the API key (keyring only). */
+  aiSettings: AiSettings;
+  aiSettingsOpen: boolean;
+  /** Presence flag from `key_get_status`; null = not fetched yet. */
+  aiKeyPresent: boolean | null;
 
   boot(): Promise<void>;
   openVaultDialog(): Promise<void>;
@@ -64,6 +77,12 @@ interface StoreState {
   dispatchSearch(action: SearchAction): void;
   querySearch(query: string): void;
   setLayout(layout: EditorLayout): void;
+  openAiSettings(): void;
+  closeAiSettings(): void;
+  setAiSettings(next: AiSettings): void;
+  refreshAiKeyStatus(): Promise<void>;
+  saveAiKey(key: string): Promise<{ ok: boolean; error?: string }>;
+  testAiConnection(): Promise<{ ok: boolean; message: string }>;
 }
 
 let vault: VaultService | null = null;
@@ -73,6 +92,9 @@ let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Same app-data settings file as the vault-path adapter (B3). */
 const SETTINGS_FILE = "worldloom-settings.json";
+/** AI settings key inside SETTINGS_FILE (M2 C1). Serialized shape only —
+ *  the five fields of core/ai/settings.ts, never the API key. */
+const AI_SETTINGS_KEY = "aiSettings";
 
 const abs = (root: string, rel: string): string =>
   `${root.replace(/[\\/]+$/, "")}/${rel}`;
@@ -175,6 +197,9 @@ export const useStore = create<StoreState>()((set, get) => {
     backlinks: [],
     search: initialSearchState,
     layout: "live",
+    aiSettings: DEFAULT_AI_SETTINGS,
+    aiSettingsOpen: false,
+    aiKeyPresent: null,
 
     async boot() {
       try {
@@ -182,6 +207,10 @@ export const useStore = create<StoreState>()((set, get) => {
         const savedLayout = await settings.get<string>("layout");
         if (savedLayout === "live" || savedLayout === "source") {
           set({ layout: savedLayout });
+        }
+        const savedAi = await settings.get<unknown>(AI_SETTINGS_KEY);
+        if (savedAi !== undefined && savedAi !== null) {
+          set({ aiSettings: parseAiSettings(savedAi) });
         }
       } catch {
         /* plain vite dev / store unavailable — default split */
@@ -311,6 +340,68 @@ export const useStore = create<StoreState>()((set, get) => {
         .catch(() => {
           /* persistence is best-effort */
         });
+    },
+
+    // ---- M2 Wave C1: AI settings surface (keyring-backed, secret-free) ----
+
+    openAiSettings() {
+      set({ aiSettingsOpen: true });
+      void get().refreshAiKeyStatus();
+    },
+
+    closeAiSettings() {
+      set({ aiSettingsOpen: false });
+    },
+
+    setAiSettings(next) {
+      // Round-trip through the serializer: normalizes and proves the stored
+      // shape is exactly the five known fields (no key can slip in).
+      const clean = parseAiSettings(serializeAiSettings(next));
+      set({ aiSettings: clean });
+      void Store.load(SETTINGS_FILE)
+        .then(async (settings) => {
+          await settings.set(AI_SETTINGS_KEY, serializeAiSettings(clean));
+          await settings.save();
+        })
+        .catch(() => {
+          /* persistence is best-effort (plain vite dev / store unavailable) */
+        });
+    },
+
+    async refreshAiKeyStatus() {
+      try {
+        set({ aiKeyPresent: await getAiKeyStatus() });
+      } catch {
+        // Outside Tauri (plain vite dev) the keyring is unreachable.
+        set({ aiKeyPresent: null });
+      }
+    },
+
+    async saveAiKey(key) {
+      try {
+        await setAiKey(key);
+      } catch (error) {
+        return { ok: false, error: keyringErrorMessage(error) };
+      }
+      await get().refreshAiKeyStatus();
+      return { ok: true };
+    },
+
+    async testAiConnection() {
+      const { baseUrl, model } = get().aiSettings;
+      try {
+        const req = buildChatRequest({
+          baseUrl,
+          model,
+          messages: [{ role: "user", content: "Reply with the single word: ok" }],
+          max_tokens: 8,
+        });
+        const reply = await chatViaProxy(req);
+        const said = reply.content.trim() || "(empty)";
+        return { ok: true, message: `Connected — ${model} replied: ${said}` };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : String(error) };
+      }
     },
   };
 });

@@ -23,3 +23,6 @@ export type { BacklinksPanelProps } from "./BacklinksPanel";
 
 export { SearchPalette } from "./SearchPalette";
 export type { SearchPaletteProps } from "./SearchPalette";
+
+export { AiSettingsPanel } from "./AiSettingsPanel";
+export type { AiSettingsPanelProps } from "./AiSettingsPanel";
