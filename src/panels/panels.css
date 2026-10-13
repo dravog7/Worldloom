@@ -407,3 +407,358 @@
   font-size: 12px;
   font-style: italic;
 }
+
+/* ---- Extraction proposals (M2 Wave E1) ---- */
+
+.wl-extract {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wl-extract-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 2px;
+}
+
+.wl-extract-rows {
+  list-style: none;
+  margin: 0;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.wl-extract-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.wl-extract-row:hover {
+  background: var(--wl-raised);
+}
+
+.wl-extract-check {
+  accent-color: var(--wl-accent);
+  flex: none;
+}
+
+.wl-extract-badge {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--wl-border-strong);
+  color: var(--wl-text-dim);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+.wl-extract-badge-entity {
+  color: var(--wl-accent);
+  border-color: var(--wl-accent);
+}
+
+.wl-extract-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-extract-confidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.wl-extract-bar {
+  display: inline-block;
+  width: 56px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--wl-code-bg);
+  border: 1px solid var(--wl-border);
+  overflow: hidden;
+}
+
+.wl-extract-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--wl-accent);
+}
+
+.wl-extract-percent {
+  color: var(--wl-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+
+.wl-extract-dismiss {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--wl-text-dim);
+  font: inherit;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.wl-extract-dismiss:hover {
+  color: var(--wl-danger);
+  background: rgba(217, 117, 106, 0.12);
+}
+
+.wl-extract-actions {
+  display: flex;
+  gap: 8px;
+  padding: 6px 12px 10px;
+}
+
+.wl-extract-applied {
+  margin: 0;
+  padding: 0 12px;
+  color: var(--wl-success);
+  font-size: 12px;
+}
+
+.wl-extract-notice {
+  margin: 0;
+  padding: 0 12px;
+  color: var(--wl-text-dim);
+  font-size: 12px;
+}
+
+/* ---- Findings panel (M2 Wave D2) ---- */
+
+.wl-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.wl-findings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wl-findings-note,
+.wl-findings-progress,
+.wl-findings-error {
+  margin: 0;
+  padding: 6px 12px 0;
+  font-size: 12px;
+}
+
+.wl-findings-progress {
+  color: var(--wl-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wl-findings-error {
+  color: var(--wl-danger);
+}
+
+.wl-finding-group {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--wl-border);
+}
+
+.wl-finding-group:last-child {
+  border-bottom: none;
+}
+
+.wl-finding-group-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--wl-text-dim);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-align: left;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+
+.wl-finding-group-header:hover {
+  background: var(--wl-raised);
+}
+
+.wl-caret {
+  color: var(--wl-accent);
+  min-width: 10px;
+}
+
+.wl-finding-group-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-finding {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 4px 12px 6px 24px;
+}
+
+.wl-finding-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.wl-kind {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--wl-border-strong);
+  background: var(--wl-raised);
+  color: var(--wl-text-dim);
+  font-size: 10px;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* AI contradictions sort first — tint the badge with the accent. */
+.wl-kind-llm-contradiction {
+  border-color: var(--wl-accent);
+  color: var(--wl-accent);
+}
+
+.wl-finding-message {
+  flex: 1;
+  min-width: 0;
+  color: var(--wl-text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.wl-dismiss {
+  flex: none;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--wl-text-dim);
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+
+.wl-dismiss:hover {
+  border-color: var(--wl-danger);
+  color: var(--wl-danger);
+}
+
+.wl-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  background: var(--wl-code-bg);
+  border: 1px solid var(--wl-border);
+  border-radius: 4px;
+  color: var(--wl-text);
+  font: inherit;
+  text-align: left;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.wl-quote:hover {
+  border-color: var(--wl-accent);
+  background: var(--wl-raised);
+}
+
+.wl-quote-loc {
+  color: var(--wl-accent);
+  font-family: var(--wl-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wl-quote-text {
+  font-family: var(--wl-font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Audit cost-estimate confirm dialog (M2 Wave D2) ---- */
+
+.wl-estimate {
+  width: 100%;
+  max-width: 440px;
+  align-self: flex-start;
+  margin-top: 14vh;
+}
+
+.wl-estimate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.wl-estimate-body .wl-hint {
+  margin: 0;
+  color: var(--wl-text-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wl-estimate-cost {
+  margin: 0;
+  color: var(--wl-text);
+  font-size: 13px;
+}
+
+.wl-estimate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---- AI capability gate (M2 Wave C2): inline setup CTA ---- */
+.wl-ai-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--wl-border);
+  border-radius: 8px;
+  color: var(--wl-text-dim);
+  font-size: 12px;
+}
+
+.wl-ai-gate .wl-hint {
+  margin: 0;
+  color: var(--wl-text-dim);
+}

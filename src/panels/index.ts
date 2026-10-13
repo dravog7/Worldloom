@@ -26,3 +26,30 @@ export type { SearchPaletteProps } from "./SearchPalette";
 
 export { AiSettingsPanel } from "./AiSettingsPanel";
 export type { AiSettingsPanelProps } from "./AiSettingsPanel";
+
+export { AskPanel } from "./AskPanel";
+export type { AskPanelProps } from "./AskPanel";
+
+// M2 Wave E1 — extraction proposals (pure row logic + thin component).
+export {
+  AUTO_ACCEPT_CONFIDENCE,
+  acceptedFlagsFor,
+  buildProposalRows,
+  describeProposal,
+} from "./extraction-proposals";
+export type { ProposalDescriptor, ProposalRow } from "./extraction-proposals";
+
+export { ExtractionPanel } from "./ExtractionPanel";
+export type { ExtractionPanelNote, ExtractionPanelProps } from "./ExtractionPanel";
+
+// M2 Wave D2 — findings panel + its panel-local UI store.
+export { FindingsPanel } from "./FindingsPanel";
+export type { FindingsPanelProps } from "./FindingsPanel";
+
+export { createFindingsUiStore, initialFindingsUiState, useFindingsUi } from "./findings-store";
+export type {
+  FindingsPhase,
+  FindingsUiActions,
+  FindingsUiState,
+  FindingsUiStore,
+} from "./findings-store";
