@@ -11,9 +11,12 @@ tests** — AI transport is always the injected mock.
 ### A1 · keyring commands — agent A1
 `src-tauri`: add `keyring` + `thiserror` deps; commands `key_set`, `key_get_status`,
 `key_delete` (service `com.worldloom.app`, account `ai-api-key`); register in
-lib.rs; capability entries. **Done when:** `npm run tauri dev` → settings-less smoke
-script `scripts/smoke-keyring.mjs` sets/deletes a test key via invoke and status
-flips; wrong-CSP-check: `tauri.conf.json` csp string byte-identical to M1.
+lib.rs via `generate_handler!`. App-defined commands need no capability entries in
+Tauri v2 (verify at build). **Done when:** `cargo test` roundtrip (set → status true →
+delete → status false) using a test-scoped service `com.worldloom.app.test` + unique
+account, cleaned up after; `npm run typecheck && npm run lint && npm test` still green
+(234); CSP byte-identical (diff `tauri.conf.json` empty); devtools manual smoke snippet
+documented (`invoke('key_set',{key:'x'}); invoke('key_get_status')`).
 
 ### A2 · ai_chat proxy command — agent A2 (depends A1)
 reqwest (rustls, json), scheme validation (https | http://127.0.0.1|localhost only),
