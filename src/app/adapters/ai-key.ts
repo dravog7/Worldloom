@@ -37,17 +37,24 @@ export function keyringErrorMessage(error: unknown): string {
  * renderer sends the request WITHOUT a credential and Rust injects the key
  * from the keyring.
  *
- * TODO(M2 A2): `ai_chat` was not registered when C1 landed (A2 is landing
- * concurrently — signature verified from src-tauri/src/ai_chat.rs WIP:
- * `#[tauri::command(async)] fn ai_chat(request: ChatRequest)` returning
- * `{content, usage?, latency_ms}`). When A2 commits, replace the throw:
- *   const raw = await invoke<{ content: string; usage?: TokenUsage; latency_ms: number }>(
- *     "ai_chat",
- *     { request: { baseUrl: req.baseUrl, model: req.model, messages: req.messages,
- *                  temperature: req.temperature, max_tokens: req.max_tokens } },
- *   );
- *   return { content: raw.content, usage: raw.usage, latencyMs: raw.latency_ms };
+ * Command shapes verified against src-tauri/src/ai_chat.rs (serde):
+ *   ChatRequest  { baseUrl, model, messages, temperature?, max_tokens? }
+ *   ChatResponse { content, usage?, latency_ms }
+ *   AiError      adjacently tagged {kind, message}, kebab-case kinds.
  */
-export async function chatViaProxy(_req: ChatRequest): Promise<AiResponse> {
-  throw new Error("ai_chat not available");
+export async function chatViaProxy(req: ChatRequest): Promise<AiResponse> {
+  const raw = await invoke<{
+    content: string;
+    usage?: { prompt_tokens: number; completion_tokens: number };
+    latency_ms: number;
+  }>("ai_chat", {
+    request: {
+      baseUrl: req.baseUrl,
+      model: req.model,
+      messages: req.messages,
+      temperature: req.temperature,
+      max_tokens: req.max_tokens,
+    },
+  });
+  return { content: raw.content, usage: raw.usage, latencyMs: raw.latency_ms };
 }
