@@ -1,8 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { LiveEditor } from "./editor";
-import { AiSettingsPanel, BacklinksPanel, FileTree, SearchPalette, select } from "./panels";
-import { lookupCandidates, useStore } from "./app/store";
+import {
+  AiSettingsPanel,
+  AskPanel,
+  BacklinksPanel,
+  ExtractionPanel,
+  FileTree,
+  FindingsPanel,
+  SearchPalette,
+  select,
+} from "./panels";
+import { useAiCapability } from "./app/AiGate";
+import { chatViaProxy } from "./app/adapters/ai-key";
+import { tauriAuditStatePort } from "./app/adapters/audit-state";
+import { getIndex, lookupCandidates, useStore } from "./app/store";
+
+/** M2 right-rail surfaces (audit findings / extraction / ask). */
+type RailTab = "audit" | "extract" | "ask";
+
+const auditStatePort = tauriAuditStatePort();
 
 /**
  * I1/M1.1 wiring: header + sidebar (tree, backlinks) + editor area driven by
@@ -25,7 +42,20 @@ function App() {
   const aiSettings = useStore((s) => s.aiSettings);
   const aiSettingsOpen = useStore((s) => s.aiSettingsOpen);
   const aiKeyPresent = useStore((s) => s.aiKeyPresent);
+  const revealRequest = useStore((s) => s.revealRequest);
+  const extractDismissed = useStore((s) => s.extractDismissed);
   const store = useStore.getState;
+  const capability = useAiCapability();
+  const [rail, setRail] = useState<RailTab | null>(null);
+  const transport = useMemo(() => ({ chat: chatViaProxy }), []);
+  const endpoint = useMemo(
+    () => ({ baseUrl: aiSettings.baseUrl, model: aiSettings.model }),
+    [aiSettings.baseUrl, aiSettings.model],
+  );
+  const index = getIndex();
+  const currentNote =
+    index && currentPath ? index.all().find((n) => n.path === currentPath) ?? null : null;
+  const toggleRail = (tab: RailTab) => setRail((r) => (r === tab ? null : tab));
 
   useEffect(() => {
     void useStore.getState().boot();
@@ -79,6 +109,18 @@ function App() {
             </button>
           ))}
         </nav>
+        <nav className="wl-segment" aria-label="AI panels">
+          {(["audit", "extract", "ask"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className={`wl-seg${rail === tab ? " wl-seg-active" : ""}`}
+              onClick={() => toggleRail(tab)}
+            >
+              {tab === "audit" ? "Audit" : tab === "extract" ? "Extract" : "Ask"}
+            </button>
+          ))}
+        </nav>
         <button className="wl-btn wl-btn-ghost" onClick={() => store().openAiSettings()}>
           AI settings
         </button>
@@ -107,7 +149,9 @@ function App() {
           onRename={(p) => void store().renameNote(p)}
           onDelete={(p) => void store().deleteNote(p)}
         />
-        {currentPath && <BacklinksPanel groups={backlinks} onOpen={(p) => void store().openNote(p)} />}
+        {currentPath && (
+          <BacklinksPanel groups={backlinks} onOpen={(p, l) => void store().openNoteAt(p, l)} />
+        )}
       </aside>
 
       <section className={`wl-main wl-layout-${layout}`}>
@@ -123,10 +167,63 @@ function App() {
               onSave={(p, c) => void store().saveNote(p, c)}
               onStatusChange={(s) => useStore.setState({ editorStatus: s })}
               mode={layout === "live" ? "live" : "source"}
+              reveal={
+                revealRequest && revealRequest.path === currentPath
+                  ? { line: revealRequest.line, nonce: revealRequest.nonce }
+                  : null
+              }
             />
           )}
         </div>
       </section>
+
+      {rail && (
+        <aside className="wl-rail" aria-label="AI panel">
+          {rail === "audit" && (
+            <FindingsPanel
+              provider={index}
+              auditStatePort={auditStatePort}
+              aiSettings={aiSettings}
+              aiKeyPresent={aiKeyPresent}
+              transport={transport}
+              onOpenNote={(p, l) => void store().openNoteAt(p, l)}
+            />
+          )}
+          {rail === "extract" && currentNote && (
+            <ExtractionPanel
+              note={{
+                path: currentNote.path,
+                title: currentNote.title,
+                body: currentNote.body,
+                type: currentNote.type,
+                aliases: currentNote.aliases,
+                source: currentContent,
+              }}
+              transport={transport}
+              endpoint={endpoint}
+              aiConfigured={capability.configured}
+              dismissed={new Set(extractDismissed)}
+              onDismiss={(h) => store().dismissExtraction(h)}
+              onSave={(p, c) => store().saveNote(p, c)}
+            />
+          )}
+          {rail === "extract" && !currentNote && (
+            <p className="wl-empty muted">Open a note to extract entities from it.</p>
+          )}
+          {rail === "ask" && index && (
+            <AskPanel
+              index={index}
+              transport={transport}
+              aiConfigured={capability.configured}
+              openNotePath={currentPath ?? undefined}
+              baseUrl={aiSettings.baseUrl}
+              model={aiSettings.model}
+              onOpenNote={(p, l) => void store().openNoteAt(p, l)}
+              onOpenSettings={() => store().openAiSettings()}
+            />
+          )}
+        </aside>
+      )}
 
       <SearchPalette
         open={search.open}

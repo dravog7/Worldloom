@@ -41,6 +41,8 @@ export interface LiveEditorProps {
   onSave: (path: string, content: string) => void | Promise<void>;
   onStatusChange: (status: "saved" | "saving" | "dirty") => void;
   mode: "live" | "source";
+  /** M2 I1 — reveal a 0-based line (audit quotes, backlinks). Nonce forces re-reveal. */
+  reveal?: { line: number; nonce: number } | null;
 }
 
 // Click accuracy: CM6's posAtCoords misplaces clicks by one line whenever a
@@ -79,7 +81,7 @@ const TOOLBAR: { action: ToolbarAction; label: string; title: string }[] = [
   { action: "wikilink", label: "[[", title: "Wikilink" },
 ];
 
-export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode }: LiveEditorProps) {
+export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode, reveal }: LiveEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const dirtyRef = useRef(false);
@@ -160,6 +162,20 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
       effects: modeCompartment.reconfigure(modeExtensions(mode)),
     });
   }, [mode]);
+
+  // M2 I1: external reveal (audit quote click / backlink) — select the line
+  // and scroll it into view; runs after the doc is in place for this path.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !reveal) return;
+    const lineNo = Math.min(Math.max(reveal.line + 1, 1), view.state.doc.lines);
+    const pos = view.state.doc.line(lineNo).from;
+    view.dispatch({
+      selection: { anchor: pos },
+      effects: EditorView.scrollIntoView(pos, { y: "center" }),
+    });
+    view.focus();
+  }, [reveal]);
 
   // External content (watcher echo / external edit) adoption — tested rule.
   useEffect(() => {

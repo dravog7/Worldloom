@@ -54,6 +54,10 @@ interface StoreState {
   expanded: ReadonlySet<string>;
   currentPath: string | null;
   currentContent: string;
+  /** M2 I1 — external reveal request (audit quotes, backlinks): open + reveal line. */
+  revealRequest: { path: string; line: number; nonce: number } | null;
+  /** M2 I1 — persisted extraction-proposal tombstones (hashes; never re-proposed). */
+  extractDismissed: string[];
   editorStatus: EditorStatus;
   backlinks: BacklinkGroup[];
   search: SearchState;
@@ -67,7 +71,10 @@ interface StoreState {
   boot(): Promise<void>;
   openVaultDialog(): Promise<void>;
   openNote(path: string): Promise<void>;
+  /** Open a note and reveal a 0-based line in the editor (M2 panels). */
+  openNoteAt(path: string, line?: number): Promise<void>;
   saveNote(path: string, content: string): Promise<void>;
+  dismissExtraction(hash: string): void;
   navigateWikilink(target: string): Promise<void>;
   createNote(parentPath: string): Promise<void>;
   deleteNote(path: string): Promise<void>;
@@ -193,6 +200,8 @@ export const useStore = create<StoreState>()((set, get) => {
     expanded: new Set<string>(),
     currentPath: null,
     currentContent: "",
+    revealRequest: null,
+    extractDismissed: [],
     editorStatus: "saved",
     backlinks: [],
     search: initialSearchState,
@@ -211,6 +220,10 @@ export const useStore = create<StoreState>()((set, get) => {
         const savedAi = await settings.get<unknown>(AI_SETTINGS_KEY);
         if (savedAi !== undefined && savedAi !== null) {
           set({ aiSettings: parseAiSettings(savedAi) });
+        }
+        const savedDismissed = await settings.get<string[]>("extractDismissed");
+        if (Array.isArray(savedDismissed)) {
+          set({ extractDismissed: savedDismissed.filter((x) => typeof x === "string") });
         }
       } catch {
         /* plain vite dev / store unavailable — default split */
@@ -247,6 +260,25 @@ export const useStore = create<StoreState>()((set, get) => {
       } catch (error) {
         set({ errorMessage: String(error) });
       }
+    },
+
+    async openNoteAt(path, line) {
+      await get().openNote(path);
+      set({ revealRequest: line === undefined ? null : { path, line, nonce: Date.now() } });
+    },
+
+    dismissExtraction(hash) {
+      if (get().extractDismissed.includes(hash)) return;
+      const next = [...get().extractDismissed, hash];
+      set({ extractDismissed: next });
+      void Store.load(SETTINGS_FILE)
+        .then(async (s) => {
+          await s.set("extractDismissed", next);
+          await s.save();
+        })
+        .catch(() => {
+          /* non-fatal: tombstone still holds for this session */
+        });
     },
 
     async saveNote(path, content) {
@@ -405,6 +437,11 @@ export const useStore = create<StoreState>()((set, get) => {
     },
   };
 });
+
+/** M2 I1: module-level index handle for AI panels (null before a vault opens). */
+export function getIndex(): MemoryIndex | null {
+  return index;
+}
 
 /** Convenience selector for wikilink autocomplete: empty query lists everything. */
 export function lookupCandidates(query: string): { title: string; path: string; aliases: string[] }[] {
