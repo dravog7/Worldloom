@@ -1,5 +1,7 @@
 // Worldloom Tauri shell — plugins only, NO custom Rust commands in M1 (ADR-001).
-// M2 Wave A1 adds the keyring commands sanctioned by ADR-006 (see ai_key.rs).
+// M2 Wave A1 adds the keyring commands sanctioned by ADR-006 (see ai_key.rs);
+// Wave A2 adds the ai_chat proxy — the app's only AI network egress path.
+mod ai_chat;
 mod ai_key;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -11,7 +13,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ai_key::key_set,
             ai_key::key_get_status,
-            ai_key::key_delete
+            ai_key::key_delete,
+            ai_chat::ai_chat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

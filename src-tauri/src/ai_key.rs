@@ -53,14 +53,22 @@ pub fn keyring_set(service: &str, account: &str, key: &str) -> Result<(), Keyrin
     entry.set_password(key).map_err(storage_err)
 }
 
-/// `true` iff a key is stored. Missing entry is `Ok(false)`, not an error.
-pub fn keyring_status(service: &str, account: &str) -> Result<bool, KeyringError> {
+/// Read the stored key. `Ok(None)` when absent — a missing entry is not an
+/// error. The value is only ever consumed INSIDE Rust (`ai_chat` injects it
+/// into the Authorization header) and is never returned to the renderer by
+/// any command.
+pub fn keyring_get(service: &str, account: &str) -> Result<Option<String>, KeyringError> {
     let entry = keyring::Entry::new(service, account).map_err(storage_err)?;
     match entry.get_password() {
-        Ok(_) => Ok(true),
-        Err(keyring::Error::NoEntry) => Ok(false),
+        Ok(key) => Ok(Some(key)),
+        Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => Err(storage_err(e)),
     }
+}
+
+/// `true` iff a key is stored. Missing entry is `Ok(false)`, not an error.
+pub fn keyring_status(service: &str, account: &str) -> Result<bool, KeyringError> {
+    Ok(keyring_get(service, account)?.is_some())
 }
 
 /// Delete the stored key. Idempotent: deleting a missing entry is `Ok(())`.

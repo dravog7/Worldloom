@@ -33,6 +33,15 @@ keyring = { version = "3", features = [
   "sync-secret-service",
 ] }
 thiserror = "2"
+# AI egress (ADR-006 §1) — the ai_chat proxy. rustls only (NO openssl: no
+# default-tls). `blocking` makes the 8MB streaming cap a std::io::Read loop
+# and keeps cargo tests tokio-free; the command itself runs on Tauri's
+# blocking thread pool via #[tauri::command(async)].
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "rustls-tls",
+  "blocking",
+] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

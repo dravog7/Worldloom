@@ -1,6 +1,6 @@
 # ADR-006 — AI plumbing: Rust-side proxy + OS keyring, renderer holds no secrets
 
-**Date:** 2026-10-12 · **Status:** proposed (gate:m2) · Supersedes the "plugin-only, no
+**Date:** 2026-10-12 · **Status:** accepted (gate:m2 approved 2026-10-13) · Supersedes the "plugin-only, no
 custom Rust commands" constraint of ADR-001 (which was scoped to M1)
 
 ## Context
