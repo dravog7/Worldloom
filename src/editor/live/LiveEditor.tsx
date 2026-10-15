@@ -23,6 +23,7 @@ import {
   autocompletion,
   closeBrackets,
   closeBracketsKeymap,
+  completionKeymap,
 } from "@codemirror/autocomplete";
 import { bracketMatching, syntaxTree } from "@codemirror/language";
 import { markdownLanguage } from "@codemirror/lang-markdown";
@@ -143,6 +144,11 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
             ...defaultKeymap,
             ...historyKeymap,
             indentWithTab,
+            // Last = highest precedence (basicSetup order): Ctrl-Space opens
+            // the completion list, Enter/Escape/arrows drive it while the
+            // tooltip is open and fall through to the keymaps above when it
+            // isn't (acceptCompletion returns false with no active dialog).
+            ...completionKeymap,
           ]),
           autocompletion({
             override: [createWikilinkCompletionSource((q) => lookupRef.current(q))],

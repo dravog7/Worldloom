@@ -53,6 +53,17 @@ export interface WikilinkCompletionResult {
   /** Cursor position — the end of the partial span. */
   to: number;
   options: WikilinkOption[];
+  /**
+   * Always `false`: CodeMirror must NOT re-filter these options against the
+   * raw `from..to` text. That span deliberately includes the literal `[[`
+   * (so applying `[[Title]]` does not stack brackets), but CM6's completion
+   * dialog fuzzy-matches each option label against that same span — and no
+   * note title contains `[`, so every option would be discarded and the
+   * tooltip would never open (the wikilink-completion-UI bug). Filtering
+   * and ranking are the injected lookup's job (exact > prefix >
+   * subsequence), which is also what `filter: false` opts into.
+   */
+  filter: false;
 }
 
 /** CM6-compatible source shape: `null` means "no completions here". */
@@ -99,7 +110,9 @@ export function createWikilinkCompletionSource(
       });
     }
     // The replaced span includes the opening "[[" so that applying
-    // `[[Title]]` does not stack brackets.
-    return { from: pos - partial.length - 2, to: pos, options };
+    // `[[Title]]` does not stack brackets; `filter: false` keeps CM6 from
+    // fuzzy-matching that bracket-inclusive span against the labels (see
+    // WikilinkCompletionResult.filter).
+    return { from: pos - partial.length - 2, to: pos, options, filter: false };
   };
 }

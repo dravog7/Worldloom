@@ -99,7 +99,20 @@ describe("createWikilinkCompletionSource — lookup filtering", () => {
   it("returns an empty option list when the lookup finds nothing", () => {
     const source = createWikilinkCompletionSource(() => []);
 
-    expect(source(probe("[[zzz"))).toEqual({ from: 0, to: 5, options: [] });
+    expect(source(probe("[[zzz"))).toEqual({
+      from: 0,
+      to: 5,
+      options: [],
+      filter: false,
+    });
+  });
+
+  it("marks results filter: false — CM6 would fuzzy-match the bracket-inclusive span against labels and drop every option (the tooltip would never open)", () => {
+    const source = createWikilinkCompletionSource(() => CANDIDATES);
+
+    const result = source(probe("[[Sil"));
+
+    expect(result?.filter).toBe(false);
   });
 
   it("deduplicates candidates sharing a title (alias collisions)", () => {
