@@ -13,7 +13,9 @@ import { installNativeClickMapping, nativePosAtCoords } from "./click-map";
 /** Minimal view fake: nativePosAtCoords only ever calls posAtDOM. */
 function fakeView(): { view: EditorView; posAtDOM: ReturnType<typeof vi.fn> } {
   const posAtDOM = vi.fn().mockReturnValue(42);
-  return { view: { posAtDOM } as unknown as EditorView, posAtDOM };
+  // Real hits always land inside the editable content; the fake models that.
+  const contentDOM = { contains: () => true };
+  return { view: { posAtDOM, contentDOM } as unknown as EditorView, posAtDOM };
 }
 
 describe("nativePosAtCoords", () => {
@@ -73,6 +75,47 @@ describe("nativePosAtCoords", () => {
     vi.stubGlobal("document", fakeDoc);
     try {
       expect(nativePosAtCoords(view, 1, 1)).toBeNull();
+      expect(posAtDOM).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  // HOME-KEY BUG regression (DIAG-B2): CM6's Home/End probe posAtCoords at
+  // the editor's extreme left/right edge when lineWrapping is on. Chromium's
+  // native hit-testing resolves points in the scroller's padding region to
+  // the .cm-scroller element itself — NOT to content — and posAtDOM would
+  // map that to document position 0, so Home jumped to the document start.
+  // Native results outside the editable content must be rejected so callers
+  // fall back to CM6's own mapping.
+  it("rejects a native hit outside the editable content (scroller padding)", () => {
+    const posAtDOM = vi.fn().mockReturnValue(0);
+    const scroller = {} as Node;
+    const contentDOM = { contains: (n: Node) => n !== scroller };
+    const view = { posAtDOM, contentDOM } as unknown as EditorView;
+    const fakeDoc = {
+      caretPositionFromPoint: () => ({ offsetNode: scroller, offset: 0 }),
+    };
+    vi.stubGlobal("document", fakeDoc);
+    try {
+      expect(nativePosAtCoords(view, 1, 600)).toBeNull();
+      expect(posAtDOM).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rejects an out-of-content hit from the caretRangeFromPoint fallback too", () => {
+    const posAtDOM = vi.fn().mockReturnValue(0);
+    const scroller = {} as Node;
+    const contentDOM = { contains: (n: Node) => n !== scroller };
+    const view = { posAtDOM, contentDOM } as unknown as EditorView;
+    const fakeDoc = {
+      caretRangeFromPoint: () => ({ startContainer: scroller, startOffset: 1 }),
+    };
+    vi.stubGlobal("document", fakeDoc);
+    try {
+      expect(nativePosAtCoords(view, 1099, 600)).toBeNull();
       expect(posAtDOM).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
