@@ -15,6 +15,21 @@ export default tseslint.config(
     },
   },
   {
+    // E2E harness: the Playwright specs run under Node + browser APIs, and
+    // tauri-mock.js is injected into the page raw (globals live on window).
+    files: ["e2e/**/*.js", "e2e/**/*.ts"],
+    languageOptions: {
+      globals: {
+        window: "readonly",
+        localStorage: "readonly",
+        fetch: "readonly",
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
+        console: "readonly",
+      },
+    },
+  },
+  {
     // Node scripts and vite/vitest config files run under Node, not the DOM.
     files: ["scripts/**/*.mjs", "*.config.ts", "*.config.js"],
     languageOptions: {
