@@ -284,7 +284,7 @@ export function stringifyFrontmatter(body: string, data: Record<string, unknown>
  */
 export function hasFrontmatterFence(content: string): boolean {
   const source = content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
-  const first = source.split(/\r\n|\n/)[0];
+  const first = source.split(/\r\n|\n|\r/)[0];
   return first !== undefined && first.trim() === "---";
 }
 
@@ -317,8 +317,13 @@ export function parseFrontmatter(content: string): FrontmatterResult | null {
   const lineOffset =
     source.split("\n").length - (body === "" ? 1 : body.split("\n").length);
   try {
-    const eol = fmText.includes("\r\n") ? "\r\n" : fmText.includes("\r") ? "\r" : "\n";
-    const lines = fmText.split(eol);
+    // Split on ANY line ending, not one uniform eol: the closing-fence scan
+    // anchors its `^` after a carriage return, so on CRLF files the final
+    // frontmatter line reaches here with a bare trailing carriage return that
+    // a uniform CRLF split leaves glued to the line - KEY_RE cannot consume
+    // it (`.` excludes carriage returns), and EVERY CRLF note (Windows-authored
+    // vaults, core.autocrlf=true checkouts) silently parsed as malformed.
+    const lines = fmText.split(/\r\n|\n|\r/);
     if (lines.length === 1 && lines[0].trim() === "") {
       return { data: {}, body, lineOffset };
     }
