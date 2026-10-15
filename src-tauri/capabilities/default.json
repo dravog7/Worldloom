@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window (Worldloom M1). fs scope is intentionally broad for the scaffold and will be narrowed to the chosen vault folder in Wave B3.",
+  "description": "Capability for the main window (Worldloom M2.5 I3). HARDENED: no static fs:scope ships — a compromised renderer starts with access only to the app-specific dirs that fs:default grants (AppConfig/AppData/AppLocalData/AppCache/AppLog; residual broad grant, WHY: @tauri-apps/plugin-store reads/writes worldloom-settings.json in AppData and the fs plugin's own default set scopes there by design). Vault access is granted one directory at a time at runtime: (1) the folder picker auto-allows exactly the user-chosen dir via tauri-plugin-dialog, (2) boot re-open re-grants the single persisted vault dir after Rust-side sanitization (src-tauri/src/vault_scope.rs). Regression tripwires: src/app/adapters/fs-scope.test.ts and vault_scope::tests::capability_json_grants_no_blanket_fs_scope.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -17,14 +17,6 @@
     "fs:allow-rename",
     "fs:allow-remove",
     "fs:allow-watch",
-    "fs:allow-unwatch",
-    {
-      "identifier": "fs:scope",
-      "allow": [{ "path": "$HOME/**" }],
-      "deny": [
-        { "path": "$HOME/.git/**" },
-        { "path": "$HOME/node_modules/**" }
-      ]
-    }
+    "fs:allow-unwatch"
   ]
 }

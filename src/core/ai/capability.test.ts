@@ -95,4 +95,13 @@ describe("aiCapability", () => {
     expect(isLocalEndpoint("http://192.168.1.5:11434/v1")).toBe(false); // LAN, not loopback
     expect(isLocalEndpoint("")).toBe(false);
   });
+
+  it("isLocalEndpoint pins the loopback host set (M2.5 I3)", () => {
+    // The only hosts ever treated as local — mirrors the Rust validator's
+    // http authority set (src-tauri/src/ai_chat.rs validate_endpoint).
+    expect(isLocalEndpoint("http://[::1]:11434/v1")).toBe(true); // IPv6 loopback
+    expect(isLocalEndpoint("http://0.0.0.0:11434/v1")).toBe(false); // wildcard bind, NOT loopback
+    expect(isLocalEndpoint("http://[fe80::1]:11434/v1")).toBe(false); // IPv6 link-local, NOT loopback
+    expect(isLocalEndpoint("http://10.0.0.1:11434/v1")).toBe(false); // private LAN
+  });
 });

@@ -104,6 +104,9 @@ describe("pickVaultFolder (plugin-dialog)", () => {
     expect(dialogMocks.open).toHaveBeenCalledExactlyOnceWith({
       directory: true,
       multiple: false,
+      // recursive is load-bearing (M2.5 I3): the dialog's auto-grant of the
+      // picked path into the fs scope is now the only vault access source.
+      recursive: true,
       title: "Open vault folder",
     });
   });
