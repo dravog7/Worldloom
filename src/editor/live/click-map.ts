@@ -34,6 +34,24 @@ interface CaretPositionLike {
 }
 
 /**
+ * Maps a native hit-test result to a document position, or null when the
+ * hit must not be trusted.
+ *
+ * A native hit is only trustworthy when it lands INSIDE the editable
+ * content. Chromium resolves points in the scroller's padding region — and
+ * CM6's Home/End probe exactly there (moveToLineBoundary asks posAtCoords
+ * for the editor's extreme left/right edge whenever lineWrapping is on) —
+ * to the `.cm-scroller` element itself; `posAtDOM` maps that to document
+ * position 0, which sent Home/Shift+Home/End to the document start. Such
+ * out-of-content hits return null so callers fall back to stock CM6
+ * mapping, which is heightmap-based and exact for non-text edge probes.
+ */
+function mappedNativePos(view: EditorView, node: Node, offset: number): number | null {
+  if (!view.contentDOM.contains(node)) return null;
+  return view.posAtDOM(node, offset);
+}
+
+/**
  * Native hit-test: document position under (x, y), or null when the
  * platform offers no usable hit-testing at these coordinates.
  */
@@ -46,12 +64,12 @@ export function nativePosAtCoords(view: EditorView, x: number, y: number): numbe
     };
     if (typeof doc.caretPositionFromPoint === "function") {
       const pos = doc.caretPositionFromPoint(x, y);
-      if (pos && pos.offsetNode) return view.posAtDOM(pos.offsetNode, pos.offset);
+      if (pos && pos.offsetNode) return mappedNativePos(view, pos.offsetNode, pos.offset);
       return null;
     }
     if (typeof doc.caretRangeFromPoint === "function") {
       const r = doc.caretRangeFromPoint(x, y);
-      if (r && r.startContainer) return view.posAtDOM(r.startContainer, r.startOffset);
+      if (r && r.startContainer) return mappedNativePos(view, r.startContainer, r.startOffset);
       return null;
     }
     return null;
