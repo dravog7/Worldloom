@@ -381,6 +381,28 @@ mod tests {
     }
 
     #[test]
+    fn validator_rejects_non_loopback_and_ipv6_http() {
+        // M2.5 I3 (loopback): plain http is authority-pinned to 127.0.0.1 /
+        // localhost — no IPv6 literals, no wildcard, no LAN. This mirrors the
+        // renderer gate (core/ai/client.ts assertEndpointAllowed) exactly:
+        // both sides refuse before any socket exists.
+        for bad in [
+            "http://[::1]:11434/v1",     // IPv6 loopback is https-only, like the renderer
+            "http://[fe80::1]:11434/v1", // link-local, not loopback
+            "http://0.0.0.0:11434/v1",   // wildcard, not loopback
+        ] {
+            let err = match super::validate_endpoint(bad) {
+                Err(e) => e,
+                Ok(_) => panic!("{bad:?} should be rejected"),
+            };
+            assert!(
+                matches!(err, AiError::InvalidEndpoint(_)),
+                "{bad:?} {err:?}"
+            );
+        }
+    }
+
+    #[test]
     fn validator_rejects_non_http_schemes_and_schemeless() {
         for bad in [
             "ftp://example.com",
