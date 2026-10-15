@@ -1,4 +1,4 @@
-import matter from "gray-matter";
+import { parseFrontmatter } from "./frontmatter";
 import type { LinkRef, Note, Relation, Temporal } from "../types";
 
 export type { LinkRef, Note, Relation, Temporal } from "../types";
@@ -160,17 +160,14 @@ export function parseNote(path: string, content: string, mtime = 0): Note {
   let body = content;
   let lineOffset = 0;
 
-  try {
-    const parsed = matter(content);
-    // Non-mapping frontmatter (e.g. a bare scalar block) counts as absent.
-    if (isRecord(parsed.data)) {
-      data = parsed.data;
-      body = parsed.content;
-      lineOffset =
-        content.split("\n").length - parsed.content.split("\n").length;
-    }
-  } catch {
-    // Malformed YAML — ADR-002 tolerance: no frontmatter, body as-is.
+  // Browser-safe v1 subset parser (see frontmatter.ts for WHY gray-matter
+  // is gone: Buffer is externalized in WebView, silently dropping all
+  // frontmatter in the real app). Returns null for absent/malformed.
+  const parsed = parseFrontmatter(content);
+  if (parsed !== null && isRecord(parsed.data)) {
+    data = parsed.data;
+    body = parsed.body;
+    lineOffset = parsed.lineOffset;
   }
 
   const maskedBody = maskInlineCode(maskFencedCode(body));

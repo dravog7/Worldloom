@@ -15,7 +15,11 @@
  * confidence deliberately EXCLUDED, so a re-extraction with a different
  * confidence still hits the tombstone).
  */
-import matter from "gray-matter";
+import {
+  hasFrontmatterFence,
+  parseFrontmatter,
+  stringifyFrontmatter,
+} from "../parser/frontmatter";
 import { parseNote } from "../parser";
 import type { ExtractionProposal } from "./extract";
 import { contentHash } from "../vault/hash";
@@ -166,13 +170,12 @@ export function applyProposalsToSource(
   options: ApplyProposalsOptions = {},
 ): string {
   const source = note.source;
-  let parsed: ReturnType<typeof matter>;
-  try {
-    parsed = matter(source);
-  } catch {
-    // Malformed YAML frontmatter — unsafe to rewrite (see docblock).
-    return source;
-  }
+  // Browser-safe v1 subset parser (same WHY as src/core/parser: gray-matter
+  // needs Buffer, which Vite externalizes in the WebView). Fence-present +
+  // parse-failed = malformed → unsafe to rewrite (see docblock); no fence at
+  // all = proceed with empty data so Accept can CREATE the frontmatter.
+  const parsed = parseFrontmatter(source);
+  if (parsed === null && hasFrontmatterFence(source)) return source;
   const rawList: readonly unknown[] = Array.isArray(proposals) ? proposals : [];
   const flags: ReadonlyArray<unknown> = Array.isArray(acceptedFlags)
     ? acceptedFlags
@@ -185,8 +188,8 @@ export function applyProposalsToSource(
 
   // Normalized current view, exactly as the app sees the note (M1 parser).
   const existing = parseNote(note.path ?? "note.md", source);
-  const data = { ...parsed.data } as Record<string, unknown>;
-  const body = stripProvenance(parsed.content);
+  const data = { ...(parsed?.data ?? {}) } as Record<string, unknown>;
+  const body = stripProvenance(parsed?.body ?? source);
 
   // --- aliases: union, case-insensitive dedupe (title counts as taken) ---
   const aliases = [...existing.aliases];
@@ -236,10 +239,9 @@ export function applyProposalsToSource(
   }
 
   // Re-render frontmatter (unknown keys survive the spread); body verbatim.
-  let out = matter.stringify(body, data);
-  // gray-matter guarantees its output body ends with "\n"; restore the exact
-  // bytes when the original body did not.
-  if (!body.endsWith("\n") && out.endsWith("\n")) out = out.slice(0, -1);
+  // stringifyFrontmatter emits exactly `---\n…\n---\n<body>` — no trailing
+  // newline is added, so the original body bytes pass through unchanged.
+  const out = stringifyFrontmatter(body, data);
 
   const confidence = Math.max(
     ...accepted.map((proposal) => clamp01(proposal.confidence)),
