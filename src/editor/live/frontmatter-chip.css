@@ -1,0 +1,33 @@
+/* W1 decorations not covered by live.css (that file is owned by the
+   toolbar wave): the frontmatter 'Note properties' chip widget + the
+   content styles for markers that are now hidden unconditionally
+   (strikethrough ~~ and underline <u>). Tokens use --wl-* fallbacks. */
+
+.wl-frontmatter-chip {
+  display: inline-block;
+  margin: 0.3em 0 0.2em;
+  padding: 1px 9px;
+  font-family: var(--wl-font-ui, system-ui, sans-serif);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--wl-text-dim, #9aa0ae);
+  background: var(--wl-raised, #171b25);
+  border: 1px solid var(--wl-border, #232937);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.wl-frontmatter-chip:hover {
+  color: var(--wl-accent, #d9a441);
+  border-color: var(--wl-accent, #d9a441);
+}
+
+/* Content styles for the newly-hidden markers (live.css has no equivalents). */
+.wl-md-strike {
+  text-decoration: line-through;
+}
+
+.wl-md-underline {
+  text-decoration: underline;
+}

@@ -43,7 +43,12 @@ $cx = [int]$args[0]; $cy = [int]$args[1]
 $proc = Get-Process worldloom -ErrorAction Stop | Select-Object -First 1
 $hwnd = [Rail]::FindTauri([uint32]$proc.Id)
 if ($hwnd -eq [IntPtr]::Zero) { Write-Output "NO_TAURI_WINDOW"; exit 1 }
-[Rail]::ShowWindow($hwnd, 9) | Out-Null
+# Minimize→restore is the reliable activation sequence on Win11: the
+# restored window is granted foreground by the shell, unlike SetForegroundWindow
+# from a background process (which Windows blocks with the foreground lock).
+[Rail]::ShowWindow($hwnd, 6) | Out-Null   # SW_MINIMIZE
+Start-Sleep -Milliseconds 250
+[Rail]::ShowWindow($hwnd, 9) | Out-Null   # SW_RESTORE
 Start-Sleep -Milliseconds 500
 $fg = [Rail]::GetForegroundWindow()
 $nullPid = 0

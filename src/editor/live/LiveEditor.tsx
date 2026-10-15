@@ -2,10 +2,10 @@
  * Live Preview editing surface (ADR-005): the document stays raw markdown
  * bytes; in 'live' mode syntax is hidden and styled via decorations, in
  * 'source' mode the raw markdown shows. Logic lives in the tested pure
- * modules (decorations/reveal/toolbar, autosave/doc-sync/autocomplete from
+ * modules (decorations/toolbar, autosave/doc-sync/autocomplete from
  * C1) — this file is only the CM6 assembly + toolbar row.
  */
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Compartment, EditorState, StateField, type Extension } from "@codemirror/state";
 import {
   EditorView,
@@ -31,7 +31,18 @@ import { createAutosaveController } from "../autosave";
 import { createWikilinkCompletionSource, type WikilinkLookup } from "../autocomplete";
 import { shouldReplaceDoc } from "../doc-sync";
 import { computeDecorations } from "./decorations";
-import { applyToolbarAction, type ToolbarAction } from "./toolbar";
+import {
+  applyToolbarAction,
+  computeToolbarState,
+  type ToolbarAction,
+  type ToolbarState,
+} from "./toolbar";
+import { ToolbarRow } from "./ToolbarRow";
+import { createBehaviorKeymap } from "./behaviors";
+import { NoteProperties } from "../../panels/NoteProperties";
+import { parseNote } from "../../core/parser";
+import "./toolbar.css";
+import "./frontmatter-chip.css";
 import "./live.css";
 
 export interface LiveEditorProps {
@@ -70,17 +81,6 @@ export const liveDecorations = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 });
 
-const TOOLBAR: { action: ToolbarAction; label: string; title: string }[] = [
-  { action: "bold", label: "B", title: "Bold (**)" },
-  { action: "italic", label: "I", title: "Italic (*)" },
-  { action: "code", label: "</>", title: "Inline code" },
-  { action: "h1", label: "H1", title: "Heading 1" },
-  { action: "h2", label: "H2", title: "Heading 2" },
-  { action: "quote", label: "❝", title: "Quote" },
-  { action: "bullet", label: "•", title: "Bullet list" },
-  { action: "wikilink", label: "[[", title: "Wikilink" },
-];
-
 export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode, reveal }: LiveEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -93,6 +93,15 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
   const onStatusRef = useRef(onStatusChange);
   onStatusRef.current = onStatusChange;
   const modeCompartment = useMemo(() => new Compartment(), []);
+  // W4: Word-toolbar state (block style + inline toggles) refreshed on every
+  // selection/doc change below; properties popover opened by the W1 chip.
+  const [toolbarState, setToolbarState] = useState<ToolbarState>({
+    block: "normal",
+    inline: { bold: false, italic: false, strike: false, code: false, underline: false },
+  });
+  const [propsOpen, setPropsOpen] = useState(false);
+  // Parsed once per content version — read-only display for the popover.
+  const propertiesNote = useMemo(() => parseNote(path, content), [path, content]);
 
   // Newest-content-wins debounce, one save in flight (tested C1 module).
   const controller = useMemo(
@@ -130,6 +139,7 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
           markdownLanguage,
           keymap.of([
             ...closeBracketsKeymap,
+            ...createBehaviorKeymap(), // Word behaviors — must precede indentWithTab (W3)
             ...defaultKeymap,
             ...historyKeymap,
             indentWithTab,
@@ -144,13 +154,23 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
               onStatusRef.current("dirty");
               controller.schedule(pathRef.current, update.state.doc.toString());
             }
+            if (update.docChanged || update.selectionSet) {
+              setToolbarState(
+                computeToolbarState(update.state.doc, update.state.selection.main.head),
+              );
+            }
           }),
           EditorView.theme({}, { dark: true }),
         ],
       }),
     });
     viewRef.current = view;
+    setToolbarState(computeToolbarState(view.state.doc, view.state.selection.main.head));
+    const host = hostRef.current;
+    const onOpenProps = () => setPropsOpen(true);
+    host?.addEventListener("wl-open-properties", onOpenProps);
     return () => {
+      host?.removeEventListener("wl-open-properties", onOpenProps);
       void controller.flush();
       view.destroy();
       viewRef.current = null;
@@ -199,25 +219,13 @@ export function LiveEditor({ path, content, lookup, onSave, onStatusChange, mode
 
   return (
     <div className="wl-live">
-      <div className="wl-md-toolbar" role="toolbar" aria-label="Formatting">
-        {TOOLBAR.map((button) => (
-          <button
-            key={button.action}
-            type="button"
-            title={button.title}
-            aria-label={button.title}
-            className={`wl-md-btn wl-md-btn-${button.action}`}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runAction(button.action)}
-          >
-            {button.label}
-          </button>
-        ))}
-        <span className="wl-md-toolbar-hint">
-          {mode === "live" ? "Live — no code, only what you write" : "Markdown source"}
-        </span>
-      </div>
+      <ToolbarRow state={toolbarState} onAction={runAction} />
       <div ref={hostRef} className="wl-live-host" />
+      <NoteProperties
+        open={propsOpen && mode === "live"}
+        note={propertiesNote}
+        onClose={() => setPropsOpen(false)}
+      />
     </div>
   );
 }

@@ -79,6 +79,16 @@ function App() {
         event.preventDefault();
         useStore.getState().dispatchSearch({ type: "open" });
       }
+      // Editor-rework escape hatch (keyboard-only, no UI): raw markdown view.
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "m"
+      ) {
+        event.preventDefault();
+        const { layout, setLayout } = useStore.getState();
+        setLayout(layout === "live" ? "source" : "live");
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -109,18 +119,6 @@ function App() {
       <header className="wl-header">
         <span className="wl-title">{vaultName}</span>
         <span className={`wl-chip wl-chip-${editorStatus}`}>{editorStatus}</span>
-        <nav className="wl-segment" aria-label="Editor mode">
-          {(["live", "source"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className={`wl-seg${layout === mode ? " wl-seg-active" : ""}`}
-              onClick={() => store().setLayout(mode)}
-            >
-              {mode === "live" ? "Live" : "Source"}
-            </button>
-          ))}
-        </nav>
         <nav className="wl-segment" aria-label="AI panels">
           {(["audit", "extract", "ask"] as const).map((tab) => (
             <button

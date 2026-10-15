@@ -1,0 +1,34 @@
+/* W2 word-style toolbar row — sibling of live.css (live.css stays untouched).
+   Reuses the --wl-* design tokens with the same fallbacks as .wl-md-btn. */
+
+.wl-md-style-select {
+  padding: 3px 6px;
+  background: var(--wl-code-bg, #0e1117);
+  border: 1px solid var(--wl-border, #232937);
+  border-radius: 6px;
+  color: var(--wl-text, #e8e4da);
+  font-family: var(--wl-font-ui, system-ui, sans-serif);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.wl-md-style-select:focus-visible {
+  outline: none;
+  border-color: var(--wl-accent, #d9a441);
+  box-shadow: 0 0 0 3px var(--wl-accent-soft, rgba(217, 164, 65, 0.12));
+}
+
+.wl-md-btn-strike {
+  text-decoration: line-through;
+}
+
+.wl-md-btn-underline {
+  text-decoration: underline;
+}
+
+/* Active toggle (caret sits inside the construct) — accent-tinted chip. */
+.wl-md-btn-active {
+  background: var(--wl-accent-soft, rgba(217, 164, 65, 0.12));
+  border-color: var(--wl-accent, #d9a441);
+  color: var(--wl-accent, #d9a441);
+}
