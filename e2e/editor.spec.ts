@@ -677,22 +677,22 @@ test.describe("editor modes and persistence", () => {
     await expect(surface).not.toContainText("[[Vael'Thor]]");
   });
 
-  // SKIPPED — WIKILINK-COMPLETION-UI BUG: the CM6 autocomplete tooltip
-  // never opens in the live editor — zero .cm-tooltip elements after typing
-  // "[[" (closeBrackets renders "[[]]") and after an explicit Ctrl+Space,
-  // while the completion source and the note index are both healthy (e2e
-  // diag DIAG-G8: the source returns {from:2,to:6,options:[Misthollow…]};
-  // DIAG-F: index.all()=33, byTitleOrAlias("Mist") resolves). LiveEditor.tsx
-  // omits completionKeymap from its keymap.of([...]) list, so the explicit
-  // trigger is unbound and the typing path never activates either. Needs a
-  // src/editor/live/LiveEditor.tsx fix — out of scope for this spec pass.
+  // Regression coverage for the WIKILINK-COMPLETION-UI bug (e2e diag DIAG-G8):
+  // the CM6 autocomplete tooltip used to never open in the live editor — zero
+  // .cm-tooltip elements after typing "[[" (closeBrackets renders "[[]]") and
+  // after an explicit Ctrl+Space — even though the completion source and the
+  // note index were both healthy (the source returned
+  // {from:2,to:6,options:[Misthollow…]}; DIAG-F: index.all()=33,
+  // byTitleOrAlias("Mist") resolves). Root cause: the source's replaced span
+  // includes the literal "[[", and CM6's dialog fuzzy-matches every option
+  // label against that raw span — no title contains "[", so every option was
+  // discarded and the tooltip never opened. Fixed with `filter: false` on the
+  // returned completion result (filtering/ranking is the lookup's job) plus
+  // `completionKeymap` restored in LiveEditor.tsx for the Ctrl+Space trigger
+  // and tooltip key handling.
   test("typing [[ opens the wikilink completion list and accepting inserts [[Title]]", async ({
     page,
   }) => {
-    test.skip(
-      true,
-      "WIKILINK-COMPLETION-UI BUG: autocomplete tooltip never opens in LiveEditor (e2e diag DIAG-G8)",
-    );
     await openAelindra(page);
     await caretToEnd(page);
     await page.keyboard.press("Enter");
@@ -703,8 +703,12 @@ test.describe("editor modes and persistence", () => {
     await expect(tooltip.locator("li")).toHaveCount(33); // every fixture note
 
     await page.keyboard.type("Mist"); // filters the list
-    await expect(tooltip).toContainText("Misthollow");
-    await expect(tooltip.locator("li")).toHaveCount(2);
+    // MemoryIndex.byTitleOrAlias matches titles AND aliases with tiered
+    // subsequence matching, so "Mist" legitimately matches 3 fixture notes:
+    // Misthollow (tier 1 prefix) plus Mira and Session 01 (tier 2
+    // subsequence). The tier-1 prefix match must rank FIRST.
+    await expect(tooltip.locator("li")).toHaveCount(3);
+    await expect(tooltip.locator("li").first()).toContainText("Misthollow");
     await tooltip.locator("li").filter({ hasText: "Misthollow" }).first().click();
 
     // Stored bytes contain the canonical [[Title]] form (Aelindra never
